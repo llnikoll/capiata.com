@@ -81,7 +81,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               <MapPin className="w-3 h-3 text-[#F5B800] shrink-0" />
               {listing.neighborhood || listing.location || "Capiatá"}
             </span>
-            <span>{formatRelativeDate(listing.created_at)}</span>
+            <span suppressHydrationWarning>{formatRelativeDate(listing.created_at)}</span>
           </div>
 
           {/* Title */}

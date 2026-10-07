@@ -90,7 +90,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
                   <MapPin className="w-3.5 h-3.5 text-[#F5B800]" />
                   {listing.neighborhood || listing.location}
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1" suppressHydrationWarning>
                   <Calendar className="w-3.5 h-3.5 text-gray-400" />
                   {formatRelativeDate(listing.created_at)}
                 </span>

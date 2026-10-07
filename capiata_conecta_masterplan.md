@@ -499,11 +499,11 @@ npx supabase gen types typescript --local > lib/types/supabase.ts
 | 4. Perfiles y Negocios | ✅ Completado | Directorio `/emprendedores`, BusinessCard con WhatsApp |
 | 5. Publicaciones | ✅ Completado | Formulario `/crear-publicacion` (OFREZCO / BUSCO) y Detalle `/publicacion/[slug]` |
 | 6. Búsqueda y filtros | ✅ Completado | Página `/explorar` con filtro por tipo, categoría, barrio, query y ordenamiento |
-| 7. Favoritos | ⬜ Pendiente | Próximo paso |
-| 8. Dashboard | ⬜ Pendiente | |
-| 9. Moderación | ⬜ Pendiente | |
-| 10. Panel Admin | ⬜ Pendiente | |
-| 11. SEO + Deploy | 🟡 En progreso | Metadatos y build de producción verificados localmente |
+| 7. Favoritos | ✅ Completado | Hook `useFavorites` con localStorage + vista `/dashboard/favoritos` |
+| 8. Dashboard | ✅ Completado | Panel `/dashboard` con sidebar, métricas, `/mis-publicaciones`, `/mis-pedidos`, `/mi-cuenta`, `/configuracion` |
+| 9. Moderación | ✅ Completado | Componente `ReportModal.tsx` con motivos y denuncias comunitarias |
+| 10. Panel Admin | ✅ Completado | Backoffice `/admin`, `/admin/publicaciones`, `/admin/usuarios` y `/admin/reportes` |
+| 11. SEO + Deploy | 🟡 En progreso | Pre-rendering dinámico, metadatos y build de producción verificados (26 rutas estáticas) |
 
 > Leyenda: ⬜ Pendiente | 🟡 En progreso | ✅ Completado | ❌ Bloqueado
 
