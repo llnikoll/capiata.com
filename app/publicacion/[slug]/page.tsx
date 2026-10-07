@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatPrice, formatRelativeDate, buildWhatsAppUrl, generateWhatsAppMessage } from "@/lib/utils";
 import { MOCK_LISTINGS } from "@/lib/mock-data";
+import { ListingJsonLd } from "@/components/seo/JsonLd";
 import {
   MapPin,
   Phone,
@@ -38,6 +39,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   return (
     <div className="py-8 bg-gray-50/50 min-h-screen">
+      <ListingJsonLd listing={listing} />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Back Link */}
         <Link

@@ -503,7 +503,7 @@ npx supabase gen types typescript --local > lib/types/supabase.ts
 | 8. Dashboard | ✅ Completado | Panel `/dashboard` con sidebar, métricas, `/mis-publicaciones`, `/mis-pedidos`, `/mi-cuenta`, `/configuracion` |
 | 9. Moderación | ✅ Completado | Componente `ReportModal.tsx` con motivos y denuncias comunitarias |
 | 10. Panel Admin | ✅ Completado | Backoffice `/admin`, `/admin/publicaciones`, `/admin/usuarios` y `/admin/reportes` |
-| 11. SEO + Deploy | 🟡 En progreso | Pre-rendering dinámico, metadatos y build de producción verificados (26 rutas estáticas) |
+| 11. SEO + Deploy | ✅ Completado | Sitemap.xml, robots.txt, Schema.org JSON-LD y pre-rendering de 28 rutas estáticas |
 
 > Leyenda: ⬜ Pendiente | 🟡 En progreso | ✅ Completado | ❌ Bloqueado
 
