@@ -57,7 +57,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             </div>
 
             <p className="text-xs text-gray-600">
-              Estás reportando: <strong>"{listingTitle}"</strong>
+              Estás reportando: <strong>{listingTitle}</strong>
             </p>
 
             <Select

@@ -2,23 +2,78 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
-import { User, Mail, Lock, Phone, UserPlus, Store } from "lucide-react";
+import { User, Mail, Lock, Phone, UserPlus, Store, CheckCircle2, AlertCircle } from "lucide-react";
 import { CAPIATA_NEIGHBORHOODS, UserType } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegistroPage() {
+  const router = useRouter();
   const [userType, setUserType] = useState<UserType>("person");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [neighborhood, setNeighborhood] = useState<string>(CAPIATA_NEIGHBORHOODS[0]);
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("¡Cuenta creada exitosamente!");
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const supabase = createClient();
+    const emailValue = email.trim().toLowerCase();
+    const username =
+      emailValue
+        .split("@")[0]
+        ?.normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9_]/gi, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase() || "usuario";
+
+    const { data, error } = await supabase.auth.signUp({
+      email: emailValue,
+      password,
+      options: {
+        data: {
+          username: `${username}-${crypto.randomUUID().slice(0, 8)}`,
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+          neighborhood,
+          user_type: userType,
+        },
+      },
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setErrorMessage(error.message || "Error al crear la cuenta. Intentalo de nuevo.");
+      return;
+    }
+
+    if (data.session) {
+      setSuccessMessage("¡Cuenta creada con éxito! Te estamos llevando a tu panel.");
+      setTimeout(() => {
+        router.push("/dashboard");
+        router.refresh();
+      }, 1000);
+      return;
+    }
+
+    setSuccessMessage("¡Cuenta creada con éxito! Revisá tu correo para confirmar la cuenta y luego iniciá sesión.");
+    setTimeout(() => {
+      router.push("/login");
+    }, 3000);
   };
 
   return (
@@ -58,6 +113,20 @@ export default function RegistroPage() {
             <Store className="w-4 h-4" /> Emprendimiento
           </button>
         </div>
+
+        {errorMessage && (
+          <div className="bg-red-50 text-red-700 p-3 rounded-xl border border-red-200 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="bg-emerald-50 text-emerald-800 p-3 rounded-xl border border-emerald-200 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{successMessage}</span>
+          </div>
+        )}
 
         <form onSubmit={handleRegister} className="space-y-4">
           <Input
@@ -112,6 +181,7 @@ export default function RegistroPage() {
             type="submit"
             variant="accent"
             size="lg"
+            isLoading={isLoading}
             className="w-full font-bold shadow-md"
             leftIcon={<UserPlus className="w-4 h-4" />}
           >

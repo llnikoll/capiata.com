@@ -1,21 +1,34 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Search, Filter, MapPin, Tag, ArrowUpDown, X } from "lucide-react";
 import { ListingCard } from "@/components/listings/ListingCard";
-import { DEFAULT_CATEGORIES, CAPIATA_NEIGHBORHOODS, ListingType } from "@/lib/types";
-import { MOCK_LISTINGS } from "@/lib/mock-data";
+import { DEFAULT_CATEGORIES, CAPIATA_NEIGHBORHOODS, ListingType, Listing } from "@/lib/types";
+import { getListings } from "@/lib/supabase/queries";
 import { Button } from "@/components/ui/Button";
+
+type SortBy = "newest" | "price_asc" | "price_desc";
 
 export default function ExplorarPage() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<ListingType | "ALL">("ALL");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [neighborhoodFilter, setNeighborhoodFilter] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc">("newest");
+  const [sortBy, setSortBy] = useState<SortBy>("newest");
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadListings() {
+      const data = await getListings();
+      setListings(data);
+      setLoading(false);
+    }
+    loadListings();
+  }, []);
 
   const filteredListings = useMemo(() => {
-    return MOCK_LISTINGS.filter((item) => {
+    return listings.filter((item) => {
       // Type filter
       if (typeFilter !== "ALL" && item.type !== typeFilter) return false;
       // Category filter
@@ -35,7 +48,7 @@ export default function ExplorarPage() {
       if (sortBy === "price_desc") return (b.price || 0) - (a.price || 0);
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [query, typeFilter, categoryFilter, neighborhoodFilter, sortBy]);
+  }, [query, typeFilter, categoryFilter, neighborhoodFilter, sortBy, listings]);
 
   const clearFilters = () => {
     setQuery("");
@@ -67,7 +80,7 @@ export default function ExplorarPage() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Todos ({MOCK_LISTINGS.length})
+              Todos ({listings.length})
             </button>
             <button
               onClick={() => setTypeFilter("OFFER")}
@@ -77,7 +90,7 @@ export default function ExplorarPage() {
                   : "bg-amber-50 text-[#D4A000] border border-amber-200 hover:bg-amber-100"
               }`}
             >
-              📣 OFREZCO ({MOCK_LISTINGS.filter((l) => l.type === "OFFER").length})
+              📣 OFREZCO ({listings.filter((l) => l.type === "OFFER").length})
             </button>
             <button
               onClick={() => setTypeFilter("REQUEST")}
@@ -87,7 +100,7 @@ export default function ExplorarPage() {
                   : "bg-blue-50 text-[#1E3A5F] border border-blue-200 hover:bg-blue-100"
               }`}
             >
-              🔍 BUSCO / Pedidos ({MOCK_LISTINGS.filter((l) => l.type === "REQUEST").length})
+              🔍 BUSCO / Pedidos ({listings.filter((l) => l.type === "REQUEST").length})
             </button>
           </div>
         </div>
@@ -168,7 +181,7 @@ export default function ExplorarPage() {
               </label>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as SortBy)}
                 className="w-full h-10 px-3 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-800 focus:ring-2 focus:ring-[#1E3A5F]"
               >
                 <option value="newest">Más recientes</option>
@@ -186,7 +199,13 @@ export default function ExplorarPage() {
               </span>
             </div>
 
-            {filteredListings.length > 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            ) : filteredListings.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredListings.map((listing) => (
                   <ListingCard key={listing.id} listing={listing} />

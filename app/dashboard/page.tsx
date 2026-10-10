@@ -1,7 +1,6 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Megaphone,
   Eye,
@@ -14,8 +13,32 @@ import {
 import { Button } from "@/components/ui/Button";
 import { MOCK_LISTINGS } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/server";
+import type { Profile } from "@/lib/types";
 
-export default function DashboardPage() {
+function getFirstName(name?: string | null) {
+  return name?.trim().split(/\s+/)[0] || "vecino";
+}
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle<Pick<Profile, "full_name">>();
+
+  const metadataName =
+    typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null;
+  const firstName = getFirstName(profile?.full_name || metadataName);
   const userListings = MOCK_LISTINGS.slice(0, 3);
   const totalViews = userListings.reduce((sum, item) => sum + item.views_count, 0);
 
@@ -25,7 +48,7 @@ export default function DashboardPage() {
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-gray-900">
-            ¡Hola, Juan! 👋
+            ¡Hola, {firstName}! 👋
           </h1>
           <p className="text-xs text-gray-500">
             Bienvenido a tu panel de Capiatá Conecta. Acá podés administrar tus anuncios y pedidos.

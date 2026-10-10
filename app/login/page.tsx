@@ -2,17 +2,42 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Mail, Lock, LogIn } from "lucide-react";
+import { Mail, Lock, LogIn, AlertCircle, CheckCircle2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Iniciando sesión...");
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setErrorMessage(error.message || "No pudimos iniciar sesión. Revisá tus datos e intentalo de nuevo.");
+      return;
+    }
+
+    setSuccessMessage("Sesión iniciada. Te estamos llevando a tu panel.");
+    router.push("/dashboard");
+    router.refresh();
   };
 
   return (
@@ -30,6 +55,20 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {errorMessage && (
+          <div className="bg-red-50 text-red-700 p-3 rounded-xl border border-red-200 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="bg-emerald-50 text-emerald-800 p-3 rounded-xl border border-emerald-200 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{successMessage}</span>
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="space-y-4">
           <Input
             label="Correo electrónico"
@@ -38,6 +77,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon={<Mail className="w-4 h-4" />}
+            disabled={isLoading}
             required
           />
 
@@ -48,6 +88,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             leftIcon={<Lock className="w-4 h-4" />}
+            disabled={isLoading}
             required
           />
 
@@ -61,6 +102,7 @@ export default function LoginPage() {
             type="submit"
             variant="primary"
             size="lg"
+            isLoading={isLoading}
             className="w-full shadow-md"
             leftIcon={<LogIn className="w-4 h-4" />}
           >

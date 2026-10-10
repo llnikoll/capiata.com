@@ -1,13 +1,26 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BusinessCard } from "@/components/home/BusinessCard";
-import { MOCK_BUSINESSES } from "@/lib/mock-data";
+import { getBusinesses } from "@/lib/supabase/queries";
 import { Store, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { Business } from "@/lib/types";
 
 export default function EmprendedoresPage() {
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadBusinesses() {
+      const data = await getBusinesses();
+      setBusinesses(data);
+      setLoading(false);
+    }
+    loadBusinesses();
+  }, []);
+
   return (
     <div className="py-10 bg-gray-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -33,11 +46,32 @@ export default function EmprendedoresPage() {
         </div>
 
         {/* Business Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MOCK_BUSINESSES.map((business) => (
-            <BusinessCard key={business.id} business={business} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        ) : businesses.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {businesses.map((business) => (
+              <BusinessCard key={business.id} business={business} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center space-y-4">
+            <Store className="w-12 h-12 text-gray-300 mx-auto" />
+            <h3 className="font-bold text-gray-800 text-lg">
+              Aún no hay comercios registrados
+            </h3>
+            <p className="text-xs text-gray-500 max-w-md mx-auto">
+              Registrá tu emprendimiento y conocé más clientes en Capiatá.
+            </p>
+            <Link href="/registro?tipo=emprendedor">
+              <Button variant="accent">Registrar Mi Comercio</Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

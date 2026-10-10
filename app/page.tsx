@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -14,18 +14,36 @@ import {
   Sparkles,
   MapPin,
   CheckCircle,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CategoryCard } from "@/components/home/CategoryCard";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { BusinessCard } from "@/components/home/BusinessCard";
 import { DEFAULT_CATEGORIES, CAPIATA_NEIGHBORHOODS } from "@/lib/types";
-import { MOCK_LISTINGS, MOCK_BUSINESSES } from "@/lib/mock-data";
+import { getListings, getBusinesses } from "@/lib/supabase/queries";
+import { Listing, Business } from "@/lib/types";
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const [listingsData, businessesData] = await Promise.all([
+        getListings({ limit: 6 }),
+        getBusinesses(),
+      ]);
+      setListings(listingsData);
+      setBusinesses(businessesData);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +54,8 @@ export default function Home() {
     window.location.href = `/explorar?${params.toString()}`;
   };
 
-  const offerListings = MOCK_LISTINGS.filter((l) => l.type === "OFFER");
-  const requestListings = MOCK_LISTINGS.filter((l) => l.type === "REQUEST");
+  const offerListings = listings.filter((l) => l.type === "OFFER").slice(0, 3);
+  const requestListings = listings.filter((l) => l.type === "REQUEST").slice(0, 2);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -232,11 +250,32 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {offerListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : offerListings.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {offerListings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center space-y-4">
+              <Megaphone className="w-12 h-12 text-gray-300 mx-auto" />
+              <h3 className="font-bold text-gray-800 text-lg">
+                Aún no hay ofertas publicadas
+              </h3>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Sé el primero en ofrecer un servicio o producto en Capiatá.
+              </p>
+              <Link href="/crear-publicacion?tipo=OFFER">
+                <Button variant="accent">Publicar Oferta</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -264,58 +303,79 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-            {requestListings.map((listing) => (
-              <div
-                key={listing.id}
-                className="p-6 rounded-2xl bg-gradient-to-br from-blue-50/50 to-white border border-blue-100/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-4"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#1E3A5F] bg-blue-100/80 px-2.5 py-1 rounded-lg">
-                      BUSCO / PEDIDO
-                    </span>
-                    <span className="text-xs text-gray-500 font-semibold flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-[#F5B800]" />
-                      {listing.neighborhood || listing.location}
-                    </span>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-48 bg-gray-200 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : requestListings.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+              {requestListings.map((listing) => (
+                <div
+                  key={listing.id}
+                  className="p-6 rounded-2xl bg-gradient-to-br from-blue-50/50 to-white border border-blue-100/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#1E3A5F] bg-blue-100/80 px-2.5 py-1 rounded-lg">
+                        BUSCO / PEDIDO
+                      </span>
+                      <span className="text-xs text-gray-500 font-semibold flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-[#F5B800]" />
+                        {listing.neighborhood || listing.location}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 leading-snug">
+                      {listing.title}
+                    </h3>
+                    <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
+                      {listing.description}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 leading-snug">
-                    {listing.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
-                    {listing.description}
-                  </p>
-                </div>
 
-                <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
-                  {listing.price ? (
-                    <span className="text-sm font-black text-[#1E3A5F]">
-                      Presupuesto: Gs. {listing.price.toLocaleString("es-PY")}
-                    </span>
-                  ) : (
-                    <span className="text-xs font-semibold text-gray-400">
-                      Presupuesto a convenir
-                    </span>
-                  )}
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+                    {listing.price ? (
+                      <span className="text-sm font-black text-[#1E3A5F]">
+                        Presupuesto: Gs. {listing.price.toLocaleString("es-PY")}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-gray-400">
+                        Presupuesto a convenir
+                      </span>
+                    )}
 
-                  {listing.contact_whatsapp && (
-                    <a
-                      href={`https://wa.me/${listing.contact_whatsapp}?text=${encodeURIComponent(
-                        `Hola, vi tu pedido "${listing.title}" en Capiatá Conecta. Puedo ayudarte.`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button variant="accent" size="sm">
-                        Tengo esto / Puedo ayudar
-                      </Button>
-                    </a>
-                  )}
+                    {listing.contact_whatsapp && (
+                      <a
+                        href={`https://wa.me/${listing.contact_whatsapp}?text=${encodeURIComponent(
+                          `Hola, vi tu pedido "${listing.title}" en Capiatá Conecta. Puedo ayudarte.`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button variant="accent" size="sm">
+                          Tengo esto / Puedo ayudar
+                        </Button>
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center space-y-4">
+              <HelpCircle className="w-12 h-12 text-gray-300 mx-auto" />
+              <h3 className="font-bold text-gray-800 text-lg">
+                Aún no hay pedidos publicados
+              </h3>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                ¿Estás buscando algo? Publicá tu pedido y la comunidad te ayudará.
+              </p>
+              <Link href="/crear-publicacion?tipo=REQUEST">
+                <Button variant="primary">Publicar Pedido</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -342,11 +402,32 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MOCK_BUSINESSES.map((b) => (
-              <BusinessCard key={b.id} business={b} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : businesses.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {businesses.slice(0, 3).map((b) => (
+                <BusinessCard key={b.id} business={b} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center space-y-4">
+              <Store className="w-12 h-12 text-gray-300 mx-auto" />
+              <h3 className="font-bold text-gray-800 text-lg">
+                Aún no hay comercios registrados
+              </h3>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Registrá tu emprendimiento y conocé más clientes en Capiatá.
+              </p>
+              <Link href="/registro?tipo=emprendedor">
+                <Button variant="accent">Registrar Mi Comercio</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
