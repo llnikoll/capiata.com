@@ -4,7 +4,7 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 export const instant = false;
 
 export default async function DashboardLayout({
