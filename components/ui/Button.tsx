@@ -32,17 +32,17 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        "bg-[#1E3A5F] text-white hover:bg-[#152B47] focus:ring-[#1E3A5F] shadow-sm hover:shadow-md",
+        "bg-gradient-to-r from-[#1E3A5F] to-[#152B47] text-white hover:from-[#152B47] hover:to-[#0F1E33] focus:ring-[#1E3A5F] shadow-lg hover:shadow-xl shadow-[#1E3A5F]/30 border border-[#1E3A5F]/20",
       secondary:
         "bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-300 border border-gray-200",
       accent:
-        "bg-[#F5B800] text-gray-950 hover:bg-[#D4A000] focus:ring-[#F5B800] shadow-sm hover:shadow-md font-bold",
+        "bg-gradient-to-r from-[#F5B800] to-[#D4A000] text-gray-950 hover:from-[#D4A000] hover:to-[#B89200] focus:ring-[#F5B800] shadow-lg hover:shadow-xl shadow-[#F5B800]/30 font-bold border border-[#F5B800]/20",
       outline:
         "border-2 border-[#1E3A5F] text-[#1E3A5F] hover:bg-[#1E3A5F]/5 focus:ring-[#1E3A5F]",
       ghost:
         "text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-300",
       danger:
-        "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm",
+        "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 focus:ring-red-500 shadow-lg",
     };
 
     const sizes = {
