@@ -9,6 +9,9 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Force dynamic rendering by awaiting an async operation
+  await Promise.resolve();
+
   const supabase = await createClient();
   const {
     data: { user },
