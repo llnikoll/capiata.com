@@ -1,49 +1,58 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
-  PlusCircle,
   Megaphone,
   HelpCircle,
   ShieldCheck,
   ArrowRight,
   UserPlus,
-  MessageSquare,
   Sparkles,
   MapPin,
-  CheckCircle,
   Store,
+  Radio,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CategoryCard } from "@/components/home/CategoryCard";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { BusinessCard } from "@/components/home/BusinessCard";
-import { DEFAULT_CATEGORIES, CAPIATA_NEIGHBORHOODS } from "@/lib/types";
-import { getListings, getBusinesses } from "@/lib/supabase/queries";
-import { Listing, Business } from "@/lib/types";
+import { Alert } from "@/components/ui/Alert";
+import { EmptyState, ListingGridSkeleton } from "@/components/ui/EmptyState";
+import { CAPIATA_NEIGHBORHOODS } from "@/lib/types";
+import { useListings } from "@/lib/hooks/useListings";
+import { useBusinesses } from "@/lib/hooks/useBusinesses";
+import { useCategories } from "@/lib/hooks/useCategories";
+import { formatPrice, generateWhatsAppMessage, buildWhatsAppUrl } from "@/lib/utils";
 
 export default function Home() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      const [listingsData, businessesData] = await Promise.all([
-        getListings({ limit: 6 }),
-        getBusinesses(),
-      ]);
-      setListings(listingsData);
-      setBusinesses(businessesData);
-      setLoading(false);
-    }
-    loadData();
-  }, []);
+  const {
+    listings: offerListings,
+    loading: offersLoading,
+    error: offersError,
+    live,
+    reload: reloadOffers,
+  } = useListings({ type: "OFFER", limit: 3 });
+
+  const {
+    listings: requestListings,
+    loading: requestsLoading,
+    error: requestsError,
+    reload: reloadRequests,
+  } = useListings({ type: "REQUEST", limit: 2 });
+
+  const { businesses, loading: businessesLoading, error: businessesError } = useBusinesses({
+    limit: 3,
+  });
+
+  const { categories } = useCategories();
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,11 +60,9 @@ export default function Home() {
     if (query.trim()) params.set("q", query.trim());
     if (selectedNeighborhood) params.set("barrio", selectedNeighborhood);
     if (selectedCategory) params.set("categoria", selectedCategory);
-    window.location.href = `/explorar?${params.toString()}`;
+    const search = params.toString();
+    router.push(search ? `/explorar?${search}` : "/explorar");
   };
-
-  const offerListings = listings.filter((l) => l.type === "OFFER").slice(0, 3);
-  const requestListings = listings.filter((l) => l.type === "REQUEST").slice(0, 2);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -155,7 +162,7 @@ export default function Home() {
                   className="w-full h-12 px-3 rounded-xl bg-gray-50 border border-gray-200 text-xs sm:text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
                 >
                   <option value="">Todas</option>
-                  {DEFAULT_CATEGORIES.map((cat) => (
+                  {categories.map((cat) => (
                     <option key={cat.slug} value={cat.slug}>
                       {cat.name}
                     </option>
@@ -189,7 +196,7 @@ export default function Home() {
               </span>
             </div>
             <Link
-              href="/como-funciona"
+              href="#como-funciona"
               className="text-[#1E3A5F] font-bold hover:underline shrink-0 flex items-center gap-1"
             >
               ¿Cómo funciona? <ArrowRight className="w-3.5 h-3.5" />
@@ -219,7 +226,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
-            {DEFAULT_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <CategoryCard key={category.slug} category={category} />
             ))}
           </div>
@@ -231,9 +238,17 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F5B800]/15 text-gray-950 text-xs font-bold border border-[#F5B800]/30 mb-2">
-                <Megaphone className="w-3.5 h-3.5 text-[#D4A000]" />
-                <span>OFREZCO</span>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F5B800]/15 text-gray-950 text-xs font-bold border border-[#F5B800]/30">
+                  <Megaphone className="w-3.5 h-3.5 text-[#D4A000]" />
+                  <span>OFREZCO</span>
+                </div>
+                {live && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                    <Radio className="w-3 h-3 animate-pulse" />
+                    EN VIVO
+                  </span>
+                )}
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900">
                 Últimas Ofertas de la Comunidad
@@ -250,12 +265,12 @@ export default function Home() {
             </Link>
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
-              ))}
-            </div>
+          {offersError ? (
+            <Alert variant="error" onRetry={reloadOffers}>
+              {offersError}
+            </Alert>
+          ) : offersLoading ? (
+            <ListingGridSkeleton count={3} />
           ) : offerListings.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {offerListings.map((listing) => (
@@ -263,18 +278,16 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center space-y-4">
-              <Megaphone className="w-12 h-12 text-gray-300 mx-auto" />
-              <h3 className="font-bold text-gray-800 text-lg">
-                Aún no hay ofertas publicadas
-              </h3>
-              <p className="text-xs text-gray-500 max-w-md mx-auto">
-                Sé el primero en ofrecer un servicio o producto en Capiatá.
-              </p>
-              <Link href="/crear-publicacion?tipo=OFFER">
-                <Button variant="accent">Publicar Oferta</Button>
-              </Link>
-            </div>
+            <EmptyState
+              icon={<Megaphone className="w-12 h-12" />}
+              title="Aún no hay ofertas publicadas"
+              description="Sé el primero en ofrecer un servicio o producto en Capiatá."
+              action={
+                <Link href="/crear-publicacion?tipo=OFFER">
+                  <Button variant="accent">Publicar Oferta</Button>
+                </Link>
+              }
+            />
           )}
         </div>
       </section>
@@ -303,12 +316,12 @@ export default function Home() {
             </Link>
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <div key={i} className="h-48 bg-gray-200 rounded-2xl animate-pulse" />
-              ))}
-            </div>
+          {requestsError ? (
+            <Alert variant="error" onRetry={reloadRequests}>
+              {requestsError}
+            </Alert>
+          ) : requestsLoading ? (
+            <ListingGridSkeleton count={2} className="lg:grid-cols-2" />
           ) : requestListings.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
               {requestListings.map((listing) => (
@@ -337,7 +350,7 @@ export default function Home() {
                   <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
                     {listing.price ? (
                       <span className="text-sm font-black text-[#1E3A5F]">
-                        Presupuesto: Gs. {listing.price.toLocaleString("es-PY")}
+                        Presupuesto: {formatPrice(Number(listing.price))}
                       </span>
                     ) : (
                       <span className="text-xs font-semibold text-gray-400">
@@ -347,9 +360,10 @@ export default function Home() {
 
                     {listing.contact_whatsapp && (
                       <a
-                        href={`https://wa.me/${listing.contact_whatsapp}?text=${encodeURIComponent(
-                          `Hola, vi tu pedido "${listing.title}" en Capiatá Conecta. Puedo ayudarte.`
-                        )}`}
+                        href={buildWhatsAppUrl(
+                          listing.contact_whatsapp,
+                          generateWhatsAppMessage(listing.title, listing.type)
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -363,18 +377,16 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center space-y-4">
-              <HelpCircle className="w-12 h-12 text-gray-300 mx-auto" />
-              <h3 className="font-bold text-gray-800 text-lg">
-                Aún no hay pedidos publicados
-              </h3>
-              <p className="text-xs text-gray-500 max-w-md mx-auto">
-                ¿Estás buscando algo? Publicá tu pedido y la comunidad te ayudará.
-              </p>
-              <Link href="/crear-publicacion?tipo=REQUEST">
-                <Button variant="primary">Publicar Pedido</Button>
-              </Link>
-            </div>
+            <EmptyState
+              icon={<HelpCircle className="w-12 h-12" />}
+              title="Aún no hay pedidos publicados"
+              description="¿Estás buscando algo? Publicá tu pedido y la comunidad te ayudará."
+              action={
+                <Link href="/crear-publicacion?tipo=REQUEST">
+                  <Button variant="primary">Publicar Pedido</Button>
+                </Link>
+              }
+            />
           )}
         </div>
       </section>
@@ -402,12 +414,10 @@ export default function Home() {
             </Link>
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
-              ))}
-            </div>
+          {businessesError ? (
+            <Alert variant="error">{businessesError}</Alert>
+          ) : businessesLoading ? (
+            <ListingGridSkeleton count={3} />
           ) : businesses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {businesses.slice(0, 3).map((b) => (
@@ -415,24 +425,22 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center space-y-4">
-              <Store className="w-12 h-12 text-gray-300 mx-auto" />
-              <h3 className="font-bold text-gray-800 text-lg">
-                Aún no hay comercios registrados
-              </h3>
-              <p className="text-xs text-gray-500 max-w-md mx-auto">
-                Registrá tu emprendimiento y conocé más clientes en Capiatá.
-              </p>
-              <Link href="/registro?tipo=emprendedor">
-                <Button variant="accent">Registrar Mi Comercio</Button>
-              </Link>
-            </div>
+            <EmptyState
+              icon={<Store className="w-12 h-12" />}
+              title="Aún no hay comercios registrados"
+              description="Registrá tu emprendimiento y conocé más clientes en Capiatá."
+              action={
+                <Link href="/registro?tipo=emprendedor">
+                  <Button variant="accent">Registrar Mi Comercio</Button>
+                </Link>
+              }
+            />
           )}
         </div>
       </section>
 
       {/* ❓ HOW IT WORKS */}
-      <section className="py-20 bg-white border-t border-gray-100">
+      <section id="como-funciona" className="py-20 bg-white border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
           <div className="max-w-2xl mx-auto space-y-3">
             <span className="text-xs font-bold uppercase tracking-wider text-[#1E3A5F]">

@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 import { Business } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
 import { MapPin, Phone, CheckCircle2, Clock } from "lucide-react";
@@ -9,7 +8,7 @@ export const BusinessCard: React.FC<{ business: Business }> = ({ business }) => 
   const whatsappUrl = business.whatsapp
     ? buildWhatsAppUrl(
         business.whatsapp,
-        encodeURIComponent(`Hola ${business.business_name}, vi tu comercio en Capiatá Conecta y quiero consultar...`)
+        `Hola ${business.business_name}, vi tu comercio en Capiatá Conecta y quiero consultar...`
       )
     : null;
 

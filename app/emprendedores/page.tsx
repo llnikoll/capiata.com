@@ -1,25 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { BusinessCard } from "@/components/home/BusinessCard";
-import { getBusinesses } from "@/lib/supabase/queries";
-import { Store, PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import React from "react";
 import Link from "next/link";
-import { Business } from "@/lib/types";
+import { BusinessCard } from "@/components/home/BusinessCard";
+import { useBusinesses } from "@/lib/hooks/useBusinesses";
+import { Store, PlusCircle, Radio } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { EmptyState, ListingGridSkeleton } from "@/components/ui/EmptyState";
 
 export default function EmprendedoresPage() {
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadBusinesses() {
-      const data = await getBusinesses();
-      setBusinesses(data);
-      setLoading(false);
-    }
-    loadBusinesses();
-  }, []);
+  const { businesses, loading, error, reload } = useBusinesses();
 
   return (
     <div className="py-10 bg-gray-50/50 min-h-screen">
@@ -28,7 +19,7 @@ export default function EmprendedoresPage() {
         <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#1E3A5F] text-xs font-bold">
-              <Store className="w-4 h-4" /> Directoria de Comercios de Capiatá
+              <Store className="w-4 h-4" /> Directorio de Comercios de Capiatá
             </div>
             <h1 className="text-3xl font-black text-gray-900">
               Emprendedores y Negocios Locales
@@ -45,32 +36,40 @@ export default function EmprendedoresPage() {
           </Link>
         </div>
 
+        {error && (
+          <Alert variant="error" onRetry={reload}>
+            {error}
+          </Alert>
+        )}
+
         {/* Business Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
-            ))}
-          </div>
+          <ListingGridSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-3" />
         ) : businesses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {businesses.map((business) => (
-              <BusinessCard key={business.id} business={business} />
-            ))}
-          </div>
+          <>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Radio className="w-3.5 h-3.5 text-emerald-500" />
+              <span>
+                <strong>{businesses.length}</strong> comercio(s) registrado(s) en Capiatá
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {businesses.map((business) => (
+                <BusinessCard key={business.id} business={business} />
+              ))}
+            </div>
+          </>
         ) : (
-          <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center space-y-4">
-            <Store className="w-12 h-12 text-gray-300 mx-auto" />
-            <h3 className="font-bold text-gray-800 text-lg">
-              Aún no hay comercios registrados
-            </h3>
-            <p className="text-xs text-gray-500 max-w-md mx-auto">
-              Registrá tu emprendimiento y conocé más clientes en Capiatá.
-            </p>
-            <Link href="/registro?tipo=emprendedor">
-              <Button variant="accent">Registrar Mi Comercio</Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={<Store className="w-12 h-12" />}
+            title="Aún no hay comercios registrados"
+            description="Registrá tu emprendimiento y conocé más clientes en Capiatá."
+            action={
+              <Link href="/registro?tipo=emprendedor">
+                <Button variant="accent">Registrar Mi Comercio</Button>
+              </Link>
+            }
+          />
         )}
       </div>
     </div>

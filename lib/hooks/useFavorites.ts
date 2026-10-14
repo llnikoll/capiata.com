@@ -1,55 +1,105 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { addFavorite, getFavorites, removeFavorite } from "@/lib/supabase/queries";
+import { toErrorMessage } from "@/lib/supabase/errors";
+import { useAuthUser } from "./useAuthUser";
+import type { Listing } from "@/lib/types";
 
-const FAVORITES_STORAGE_KEY = "capiata_favorites_ids";
-const FAVORITES_CHANGED_EVENT = "capiata:favorites-changed";
-
-function readStoredFavorites() {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
+export interface UseFavoritesResult {
+  /** Publicaciones guardadas por el usuario (con datos completos). */
+  favorites: Listing[];
+  favoriteIds: string[];
+  loading: boolean;
+  error: string | null;
+  isFavorite: (listingId: string) => boolean;
+  toggleFavorite: (listingId: string) => Promise<void>;
+  reload: () => void;
 }
 
-function getSnapshot() {
-  return JSON.stringify(readStoredFavorites());
-}
+/**
+ * Favoritos persistidos en Supabase (tabla public.favorites) para el usuario
+ * autenticado. Requiere sesión: sin usuario la lista queda vacía y el toggle
+ * es un no-op controlado por la interfaz.
+ */
+export function useFavorites(): UseFavoritesResult {
+  const { user, loading: authLoading } = useAuthUser();
+  const [favorites, setFavorites] = useState<Listing[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-function subscribe(callback: () => void) {
-  window.addEventListener("storage", callback);
-  window.addEventListener(FAVORITES_CHANGED_EVENT, callback);
-
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener(FAVORITES_CHANGED_EVENT, callback);
-  };
-}
-
-export function useFavorites() {
-  const favoriteSnapshot = useSyncExternalStore(subscribe, getSnapshot, () => "[]");
-  const favoriteIds = useMemo<string[]>(() => JSON.parse(favoriteSnapshot), [favoriteSnapshot]);
-
-  const toggleFavorite = (id: string) => {
-    const current = readStoredFavorites();
-    const exists = current.includes(id);
-    const next = exists ? current.filter((item: string) => item !== id) : [...current, id];
-
-    try {
-      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next));
-      window.dispatchEvent(new Event(FAVORITES_CHANGED_EVENT));
-    } catch {
-      // Ignorar
+  const load = useCallback(async () => {
+    if (!user) {
+      setFavorites([]);
+      setFavoriteIds([]);
+      setLoading(authLoading);
+      return;
     }
+
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const rows = await getFavorites(supabase, user.id);
+      const listings = rows
+        .map((row) => row.listing)
+        .filter((listing): listing is Listing => Boolean(listing));
+
+      setFavorites(listings);
+      setFavoriteIds(rows.map((row) => row.listing_id));
+      setError(null);
+    } catch (loadError) {
+      setError(toErrorMessage(loadError, "No pudimos cargar tus favoritos."));
+    } finally {
+      setLoading(false);
+    }
+  }, [user, authLoading]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const toggleFavorite = useCallback(
+    async (listingId: string) => {
+      if (!user) return;
+
+      const isCurrentlyFavorite = favoriteIds.includes(listingId);
+
+      // Actualización optimista: la interfaz responde al instante.
+      setFavoriteIds((prev) =>
+        isCurrentlyFavorite ? prev.filter((id) => id !== listingId) : [...prev, listingId]
+      );
+      if (isCurrentlyFavorite) {
+        setFavorites((prev) => prev.filter((listing) => listing.id !== listingId));
+      }
+
+      try {
+        const supabase = createClient();
+        if (isCurrentlyFavorite) {
+          await removeFavorite(supabase, user.id, listingId);
+        } else {
+          await addFavorite(supabase, user.id, listingId);
+          await load();
+        }
+        setError(null);
+      } catch (toggleError) {
+        setError(toErrorMessage(toggleError, "No pudimos actualizar el favorito."));
+        await load();
+      }
+    },
+    [user, favoriteIds, load]
+  );
+
+  return {
+    favorites,
+    favoriteIds,
+    loading,
+    error,
+    isFavorite: (listingId: string) => favoriteIds.includes(listingId),
+    toggleFavorite,
+    reload: () => {
+      void load();
+    },
   };
-
-  const isFavorite = (id: string) => favoriteIds.includes(id);
-
-  return { favoriteIds, toggleFavorite, isFavorite, isLoaded: true };
 }

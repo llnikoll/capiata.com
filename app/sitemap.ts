@@ -1,27 +1,15 @@
 import { MetadataRoute } from "next";
-import { DEFAULT_CATEGORIES } from "@/lib/types";
-import { MOCK_LISTINGS } from "@/lib/mock-data";
+import { createPublicClient } from "@/lib/supabase/public";
+import { getCategories, getListings } from "@/lib/supabase/queries";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/**
+ * Sitemap dinámico: categorías y publicaciones activas reales de Supabase.
+ * Si la base no responde, se devuelven igual las rutas estáticas para no
+ * romper el build ni servir un sitemap vacío.
+ */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capiata.com";
 
-  // Dynamic category routes
-  const categoryRoutes: MetadataRoute.Sitemap = DEFAULT_CATEGORIES.map((cat) => ({
-    url: `${baseUrl}/categoria/${cat.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "daily",
-    priority: 0.8,
-  }));
-
-  // Dynamic listing detail routes
-  const listingRoutes: MetadataRoute.Sitemap = MOCK_LISTINGS.map((listing) => ({
-    url: `${baseUrl}/publicacion/${listing.slug}`,
-    lastModified: new Date(listing.updated_at || listing.created_at),
-    changeFrequency: "weekly",
-    priority: 0.9,
-  }));
-
-  // Static main pages
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -61,5 +49,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  return [...staticRoutes, ...categoryRoutes, ...listingRoutes];
+  try {
+    const supabase = createPublicClient();
+    const [categories, listings] = await Promise.all([
+      getCategories(supabase),
+      getListings(supabase, { limit: 500, sort: "newest" }),
+    ]);
+
+    const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
+      url: `${baseUrl}/explorar?categoria=${category.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    }));
+
+    const listingRoutes: MetadataRoute.Sitemap = listings.map((listing) => ({
+      url: `${baseUrl}/publicacion/${listing.slug}`,
+      lastModified: new Date(listing.updated_at || listing.created_at),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    }));
+
+    return [...staticRoutes, ...categoryRoutes, ...listingRoutes];
+  } catch {
+    return staticRoutes;
+  }
 }

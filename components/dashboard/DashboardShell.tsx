@@ -18,7 +18,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import type { Profile } from "@/lib/types";
 
 type ProfileData = {
   full_name: string | null;
@@ -64,9 +63,15 @@ type DashboardShellProps = {
   children: React.ReactNode;
   user: Pick<SupabaseUser, "email" | "user_metadata">;
   profile: ProfileData | null;
+  profileError?: string | null;
 };
 
-export function DashboardShell({ children, user, profile }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  user,
+  profile,
+  profileError,
+}: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -127,6 +132,12 @@ export function DashboardShell({ children, user, profile }: DashboardShellProps)
                 );
               })}
             </nav>
+
+            {profileError && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900">
+                {profileError}
+              </div>
+            )}
 
             <div className="pt-4 border-t border-gray-100 space-y-2">
               <Link href="/crear-publicacion">

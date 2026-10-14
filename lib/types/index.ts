@@ -22,7 +22,20 @@ export interface Profile {
   user_type: UserType;
   is_verified: boolean;
   is_blocked: boolean;
+  /** Sólo presente cuando la consulta pide explícitamente la columna (panel admin). */
+  is_admin?: boolean;
   created_at: string;
+}
+
+/** Fila de perfil tal como se construye en los formularios del dashboard. */
+export interface ProfileUpdateInput {
+  full_name: string;
+  phone: string;
+  bio: string | null;
+  neighborhood: string;
+  city: string;
+  user_type: UserType;
+  avatar_url?: string | null;
 }
 
 export interface Business {
@@ -42,6 +55,18 @@ export interface Business {
     website?: string;
   } | null;
   created_at: string;
+}
+
+/** Datos editables del perfil de comercio/emprendimiento. */
+export interface BusinessUpdateInput {
+  business_name: string;
+  description: string | null;
+  category: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  address: string | null;
+  schedule: string | null;
+  logo_url?: string | null;
 }
 
 export interface Category {
@@ -93,7 +118,7 @@ export interface Favorite {
   user_id: string;
   listing_id: string;
   created_at: string;
-  listing?: Listing;
+  listing?: Listing | null;
 }
 
 export interface Report {
@@ -105,6 +130,39 @@ export interface Report {
   status: "pending" | "reviewed" | "resolved";
   created_at: string;
 }
+
+/** Reporte con la publicación y el denunciante embebidos (panel admin). */
+export interface ReportWithRelations extends Report {
+  listing: Pick<Listing, "id" | "title" | "slug" | "status"> | null;
+  reporter: Pick<Profile, "id" | "username" | "full_name" | "avatar_url"> | null;
+}
+
+/** Fila de favorito con la publicación asociada. */
+export interface FavoriteWithListing extends Favorite {
+  listing: Listing | null;
+}
+
+export interface AdminStats {
+  users: number;
+  listings: number;
+  businesses: number;
+  pendingReports: number;
+}
+
+export interface ReportReasonOption {
+  value: ReportReason;
+  label: string;
+}
+
+export const REPORT_REASONS: ReportReasonOption[] = [
+  { value: "scam", label: "Posible estafa o engaño" },
+  { value: "fake", label: "Información o precio falso" },
+  { value: "prohibited", label: "Producto o servicio prohibido" },
+  { value: "spam", label: "Publicación duplicada o spam" },
+  { value: "offensive", label: "Contenido ofensivo o inapropiado" },
+  { value: "wrong", label: "Categoría incorrecta" },
+  { value: "other", label: "Otro motivo" },
+];
 
 // Capiatá Neighborhoods (Barrios de Capiatá)
 export const CAPIATA_NEIGHBORHOODS = [

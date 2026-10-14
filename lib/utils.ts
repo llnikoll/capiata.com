@@ -19,12 +19,15 @@ export function formatPrice(price: number): string {
 /** Formatea fecha relativa (ej: "hace 2 horas") */
 export function formatRelativeDate(date: string | Date, nowInput?: Date): string {
   const d = new Date(date);
-  const now = nowInput || (typeof window !== "undefined" ? new Date() : new Date("2026-10-06T23:50:00.000Z"));
+  if (Number.isNaN(d.getTime())) return "";
+
+  const now = nowInput || new Date();
   const diff = now.getTime() - d.getTime();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
+  if (diff < 0) return "Hace un momento";
   if (minutes < 1) return "Hace un momento";
   if (minutes < 60) return `Hace ${minutes} min`;
   if (hours < 24) return `Hace ${hours} hora${hours !== 1 ? "s" : ""}`;
@@ -32,26 +35,49 @@ export function formatRelativeDate(date: string | Date, nowInput?: Date): string
   return d.toLocaleDateString("es-PY");
 }
 
-/** Genera mensaje de WhatsApp para una publicación */
+/** Formatea una fecha absoluta para el panel administrativo */
+export function formatDateTime(date: string | Date): string {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  return d.toLocaleString("es-PY", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Normaliza un teléfono paraguayo al formato internacional sin signos
+ * (ej: "0981 123 456" → "595981123456") para usarlo en enlaces de WhatsApp.
+ */
+export function normalizeWhatsAppNumber(input: string | null | undefined): string {
+  const digits = (input ?? "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("595")) return digits;
+  if (digits.startsWith("0")) return `595${digits.slice(1)}`;
+  if (digits.length === 9 && digits.startsWith("9")) return `595${digits}`;
+  return digits;
+}
+
+/** Genera el texto (sin codificar) del mensaje de WhatsApp para una publicación */
 export function generateWhatsAppMessage(
   listingTitle: string,
   listingType: "OFFER" | "REQUEST"
 ): string {
   if (listingType === "OFFER") {
-    return encodeURIComponent(
-      `Hola, vi tu publicación "${listingTitle}" en Capiatá Conecta y estoy interesado/a. ¿Podés darme más información?`
-    );
+    return `Hola, vi tu publicación "${listingTitle}" en Capiatá Conecta y estoy interesado/a. ¿Podés darme más información?`;
   }
-  return encodeURIComponent(
-    `Hola, vi tu pedido "${listingTitle}" en Capiatá Conecta. Creo que puedo ayudarte. ¿Hablamos?`
-  );
+  return `Hola, vi tu pedido "${listingTitle}" en Capiatá Conecta. Creo que puedo ayudarte. ¿Hablamos?`;
 }
 
-/** Genera URL de WhatsApp */
+/** Genera URL de WhatsApp lista para usar (codifica el mensaje) */
 export function buildWhatsAppUrl(phone: string, message: string): string {
-  const clean = phone.replace(/\D/g, "");
-  return `https://wa.me/${clean}?text=${message}`;
+  return `https://wa.me/${normalizeWhatsAppNumber(phone)}?text=${encodeURIComponent(message)}`;
 }
+
 
 /** Trunca texto */
 export function truncate(text: string, maxLength: number): string {

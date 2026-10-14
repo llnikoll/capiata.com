@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,30 +17,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 export const Navbar = () => {
   const router = useRouter();
+  const { user, loading } = useAuthUser();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function checkAuth() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
-    }
-
-    checkAuth();
-
-    const { data: { subscription } } = createClient().auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -52,7 +35,8 @@ export const Navbar = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/explorar?q=${encodeURIComponent(searchQuery)}`;
+      router.push(`/explorar?q=${encodeURIComponent(searchQuery.trim())}`);
+      setIsMobileMenuOpen(false);
     }
   };
 

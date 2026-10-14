@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { MapPin, Heart, ShieldCheck, PhoneCall, AlertCircle } from "lucide-react";
+import { MapPin, Heart, ShieldCheck, AlertCircle } from "lucide-react";
 
 export const Footer = () => {
   return (
