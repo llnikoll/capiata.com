@@ -20,6 +20,13 @@ import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/types";
 
+type ProfileData = {
+  full_name: string | null;
+  avatar_url: string | null;
+  user_type: string;
+  neighborhood: string | null;
+};
+
 const sidebarLinks = [
   {
     name: "Inicio",
@@ -56,7 +63,7 @@ const sidebarLinks = [
 type DashboardShellProps = {
   children: React.ReactNode;
   user: Pick<SupabaseUser, "email" | "user_metadata">;
-  profile: Pick<Profile, "full_name" | "avatar_url" | "user_type" | "neighborhood"> | null;
+  profile: ProfileData | null;
 };
 
 export function DashboardShell({ children, user, profile }: DashboardShellProps) {

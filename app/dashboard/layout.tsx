@@ -4,7 +4,6 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile } from "@/lib/types";
 
 type ProfileData = {
   full_name: string | null;
