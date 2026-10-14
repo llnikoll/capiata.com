@@ -1,6 +1,8 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Megaphone,
   Eye,
@@ -13,34 +15,49 @@ import {
 import { Button } from "@/components/ui/Button";
 import { MOCK_LISTINGS } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
 function getFirstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "vecino";
 }
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function DashboardPage() {
+  const router = useRouter();
+  const [firstName, setFirstName] = useState("vecino");
+  const [loading, setLoading] = useState(true);
 
-  if (!user) {
-    redirect("/login");
-  }
+  useEffect(() => {
+    async function loadUser() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle<Pick<Profile, "full_name">>();
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
 
-  const metadataName =
-    typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null;
-  const firstName = getFirstName(profile?.full_name || metadataName);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle<Pick<Profile, "full_name">>();
+
+      const metadataName =
+        typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null;
+      setFirstName(getFirstName(profile?.full_name || metadataName));
+      setLoading(false);
+    }
+
+    loadUser();
+  }, [router]);
+
   const userListings = MOCK_LISTINGS.slice(0, 3);
   const totalViews = userListings.reduce((sum, item) => sum + item.views_count, 0);
+
+  if (loading) {
+    return <div className="text-gray-500">Cargando...</div>;
+  }
 
   return (
     <div className="space-y-6">
