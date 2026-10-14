@@ -68,8 +68,13 @@ export default function CrearPublicacionPage() {
         }
 
         if (data) {
+          // Get the public URL for the uploaded image
+          const { data: { publicUrl } } = supabase.storage
+            .from('listings-images')
+            .getPublicUrl(data.path);
+
           uploadedImages.push({
-            url: data.path,
+            url: publicUrl,
             position: uploadedImages.length,
           });
         }
