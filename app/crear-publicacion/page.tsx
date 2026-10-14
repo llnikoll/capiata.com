@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Megaphone, HelpCircle, Upload, CheckCircle2, ArrowRight } from "lucide-react";
+import { Megaphone, HelpCircle, Upload, CheckCircle2, ArrowRight, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { DEFAULT_CATEGORIES, CAPIATA_NEIGHBORHOODS, ListingType } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CrearPublicacionPage() {
   const [type, setType] = useState<ListingType>("OFFER");
@@ -15,11 +16,125 @@ export default function CrearPublicacionPage() {
   const [price, setPrice] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [description, setDescription] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter((file) => {
+      const isValidType = file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/webp";
+      const isValidSize = file.size <= 1024 * 1024; // 1MB max
+      return isValidType && isValidSize;
+    });
+
+    if (validFiles.length > 0) {
+      setImages([...images, ...validFiles]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    setUploading(true);
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        alert("Debes iniciar sesión para publicar");
+        window.location.href = "/login";
+        return;
+      }
+
+      // Upload images to Supabase Storage
+      const uploadedImages = [];
+      for (const file of images) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from('listings-images')
+          .upload(filePath, file);
+
+        if (error) {
+          console.error("Error uploading image:", error);
+          continue;
+        }
+
+        if (data) {
+          uploadedImages.push({
+            url: data.path,
+            position: uploadedImages.length,
+          });
+        }
+      }
+
+      // Create listing
+      const { data: category } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("slug", categoryId)
+        .single();
+
+      if (!category) {
+        alert("Error: Categoría no encontrada");
+        setUploading(false);
+        return;
+      }
+
+      const slug = `${title.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')}-${Date.now()}`;
+
+      const { data: listing, error: listingError } = await supabase
+        .from("listings")
+        .insert({
+          user_id: user.id,
+          type,
+          category_id: category.id,
+          title,
+          slug,
+          description,
+          price: price ? parseFloat(price) : null,
+          currency: "GS",
+          location: "Capiatá",
+          neighborhood,
+          contact_whatsapp: whatsapp,
+          contact_method: ["whatsapp"],
+          status: "active",
+        })
+        .select()
+        .single();
+
+      if (listingError) {
+        alert("Error al crear la publicación: " + listingError.message);
+        setUploading(false);
+        return;
+      }
+
+      // Upload images to listing_images table
+      for (const img of uploadedImages) {
+        await supabase.from("listing_images").insert({
+          listing_id: listing.id,
+          image_url: img.url,
+          position: img.position,
+        });
+      }
+
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error al crear la publicación. Intentalo de nuevo.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (isSubmitted) {
@@ -180,13 +295,45 @@ export default function CrearPublicacionPage() {
             <label className="text-xs font-semibold text-gray-700">
               Fotos (opcional)
             </label>
-            <div className="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-gray-300 transition-colors cursor-pointer bg-gray-50/50">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={handleImageUpload}
+              className="hidden"
+              id="image-upload"
+            />
+            <label
+              htmlFor="image-upload"
+              className="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-gray-300 transition-colors cursor-pointer bg-gray-50/50"
+            >
               <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
               <p className="text-xs text-gray-600 font-semibold">
                 Hacé clic o arrastrá fotos aquí
               </p>
-              <p className="text-[10px] text-gray-400 mt-1">PNG, JPG hasta 5MB</p>
-            </div>
+              <p className="text-[10px] text-gray-400 mt-1">PNG, JPG, WebP hasta 1MB</p>
+            </label>
+
+            {images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                {images.map((file, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-xl border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* SUBMIT BUTTON */}
@@ -194,10 +341,12 @@ export default function CrearPublicacionPage() {
             type="submit"
             variant="accent"
             size="lg"
+            isLoading={uploading}
+            disabled={uploading}
             className="w-full font-extrabold shadow-md"
-            rightIcon={<ArrowRight className="w-5 h-5" />}
+            rightIcon={!uploading ? <ArrowRight className="w-5 h-5" /> : undefined}
           >
-            Publicar Gratis en Capiatá
+            {uploading ? "Publicando..." : "Publicar Gratis en Capiatá"}
           </Button>
         </form>
       </div>
