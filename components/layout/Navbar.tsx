@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   PlusCircle,
@@ -12,12 +13,41 @@ import {
   Megaphone,
   Briefcase,
   HelpCircle,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { createClient } from "@/lib/supabase/client";
 
 export const Navbar = () => {
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    }
+
+    checkAuth();
+
+    const { data: { subscription } } = createClient().auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/");
+    router.refresh();
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,11 +141,32 @@ export const Navbar = () => {
               </Button>
             </Link>
 
-            <Link href="/login" className="hidden sm:inline-flex">
-              <Button variant="ghost" size="sm" leftIcon={<User className="w-4 h-4" />}>
-                Ingresar
-              </Button>
-            </Link>
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <Link href="/dashboard" className="hidden sm:inline-flex">
+                      <Button variant="ghost" size="sm" leftIcon={<User className="w-4 h-4" />}>
+                        Mi Panel
+                      </Button>
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="hidden sm:inline-flex p-2 rounded-xl text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title="Cerrar sesión"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <Link href="/login" className="hidden sm:inline-flex">
+                    <Button variant="ghost" size="sm" leftIcon={<User className="w-4 h-4" />}>
+                      Ingresar
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
 
             {/* Mobile menu trigger */}
             <button
@@ -179,16 +230,41 @@ export const Navbar = () => {
           </div>
 
           <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
-            <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button variant="outline" className="w-full justify-center">
-                Iniciar Sesión
-              </Button>
-            </Link>
-            <Link href="/registro" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button variant="primary" className="w-full justify-center">
-                Crear Cuenta Gratis
-              </Button>
-            </Link>
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full justify-center">
+                        Mi Panel
+                      </Button>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full text-sm text-red-600 font-semibold py-2 rounded-xl hover:bg-red-50 transition-colors"
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full justify-center">
+                        Iniciar Sesión
+                      </Button>
+                    </Link>
+                    <Link href="/registro" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="primary" className="w-full justify-center">
+                        Crear Cuenta Gratis
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
