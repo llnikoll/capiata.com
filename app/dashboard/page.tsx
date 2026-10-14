@@ -13,10 +13,10 @@ import {
   MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { MOCK_LISTINGS } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile } from "@/lib/types";
+import { getListings } from "@/lib/supabase/queries";
+import type { Profile, Listing } from "@/lib/types";
 
 type ProfileName = {
   full_name: string | null;
@@ -29,10 +29,11 @@ function getFirstName(name?: string | null) {
 export default function DashboardPage() {
   const router = useRouter();
   const [firstName, setFirstName] = useState("vecino");
+  const [userListings, setUserListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadUser() {
+    async function loadData() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -50,14 +51,19 @@ export default function DashboardPage() {
       const metadataName =
         typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null;
       setFirstName(getFirstName(profile?.full_name || metadataName));
+
+      // Load user's listings from Supabase
+      const listings = await getListings();
+      const userListings = listings.filter((l) => l.user_id === user.id);
+      setUserListings(userListings);
+
       setLoading(false);
     }
 
-    loadUser();
+    loadData();
   }, [router]);
 
-  const userListings = MOCK_LISTINGS.slice(0, 3);
-  const totalViews = userListings.reduce((sum, item) => sum + item.views_count, 0);
+  const totalViews = userListings.reduce((sum, item) => sum + (item.views_count || 0), 0);
 
   if (loading) {
     return <div className="text-gray-500">Cargando...</div>;
@@ -108,8 +114,8 @@ export default function DashboardPage() {
             <span className="text-xs font-semibold">Contactos WhatsApp</span>
             <Phone className="w-4 h-4 text-emerald-500" />
           </div>
-          <span className="text-3xl font-black text-gray-900">28</span>
-          <span className="text-[11px] text-emerald-600 font-medium">Mensajes recibidos</span>
+          <span className="text-3xl font-black text-gray-900">0</span>
+          <span className="text-[11px] text-gray-400 font-medium">Mensajes recibidos</span>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-xs flex flex-col justify-between space-y-2">
@@ -117,7 +123,7 @@ export default function DashboardPage() {
             <span className="text-xs font-semibold">Guardados</span>
             <Heart className="w-4 h-4 text-red-500" />
           </div>
-          <span className="text-3xl font-black text-gray-900">14</span>
+          <span className="text-3xl font-black text-gray-900">0</span>
           <span className="text-[11px] text-gray-400 font-medium">Vecinos que guardaron tus ítems</span>
         </div>
       </div>
@@ -134,43 +140,58 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="divide-y divide-gray-100">
-          {userListings.map((item) => (
-            <div key={item.id} className="py-3 flex items-center justify-between gap-4">
-              <div className="space-y-1 min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                      item.type === "OFFER"
-                        ? "bg-[#F5B800] text-gray-950"
-                        : "bg-[#1E3A5F] text-white"
-                    }`}
-                  >
-                    {item.type}
-                  </span>
-                  <span className="text-xs text-gray-400 flex items-center gap-0.5">
-                    <MapPin className="w-3 h-3 text-[#F5B800]" />
-                    {item.neighborhood}
-                  </span>
+        {userListings.length > 0 ? (
+          <div className="divide-y divide-gray-100">
+            {userListings.map((item) => (
+              <div key={item.id} className="py-3 flex items-center justify-between gap-4">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                        item.type === "OFFER"
+                          ? "bg-[#F5B800] text-gray-950"
+                          : "bg-[#1E3A5F] text-white"
+                      }`}
+                    >
+                      {item.type}
+                    </span>
+                    <span className="text-xs text-gray-400 flex items-center gap-0.5">
+                      <MapPin className="w-3 h-3 text-[#F5B800]" />
+                      {item.neighborhood}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-gray-900 text-sm truncate">{item.title}</h4>
+                  {item.price && (
+                    <span className="text-xs font-black text-[#1E3A5F]">
+                      {formatPrice(item.price)}
+                    </span>
+                  )}
                 </div>
-                <h4 className="font-bold text-gray-900 text-sm truncate">{item.title}</h4>
-                {item.price && (
-                  <span className="text-xs font-black text-[#1E3A5F]">
-                    {formatPrice(item.price)}
-                  </span>
-                )}
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <Link href={`/publicacion/${item.slug}`}>
-                  <Button variant="outline" size="sm">
-                    Ver anuncio
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link href={`/publicacion/${item.slug}`}>
+                    <Button variant="outline" size="sm">
+                      Ver anuncio
+                    </Button>
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 space-y-3">
+            <Megaphone className="w-12 h-12 text-gray-300 mx-auto" />
+            <h4 className="font-bold text-gray-800">Aún no tenés publicaciones</h4>
+            <p className="text-xs text-gray-500">
+              Creá tu primer anuncio para empezar a conectar con tus vecinos.
+            </p>
+            <Link href="/crear-publicacion">
+              <Button variant="accent" size="sm">
+                Crear Publicación
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
