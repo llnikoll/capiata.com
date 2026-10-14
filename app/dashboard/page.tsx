@@ -26,8 +26,6 @@ function getFirstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "vecino";
 }
 
-export const instant = false;
-
 export default function DashboardPage() {
   const router = useRouter();
   const [firstName, setFirstName] = useState("vecino");
