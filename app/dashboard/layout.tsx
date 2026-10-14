@@ -6,6 +6,13 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
+type ProfileData = {
+  full_name: string | null;
+  avatar_url: string | null;
+  user_type: string;
+  neighborhood: string | null;
+};
+
 export default function DashboardLayout({
   children,
 }: {
@@ -13,7 +20,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [user, setUser] = React.useState<any>(null);
-  const [profile, setProfile] = React.useState<Pick<Profile, "full_name" | "avatar_url" | "user_type" | "neighborhood"> | null>(null);
+  const [profile, setProfile] = React.useState<ProfileData | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   useEffect(() => {
@@ -32,7 +39,7 @@ export default function DashboardLayout({
         .from("profiles")
         .select("full_name, avatar_url, user_type, neighborhood")
         .eq("id", user.id)
-        .maybeSingle<Pick<Profile, "full_name" | "avatar_url" | "user_type" | "neighborhood">();
+        .maybeSingle<ProfileData>();
 
       setProfile(profile);
       setLoading(false);

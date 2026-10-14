@@ -18,6 +18,10 @@ import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
+type ProfileName = {
+  full_name: string | null;
+};
+
 function getFirstName(name?: string | null) {
   return name?.trim().split(/\s+/)[0] || "vecino";
 }
@@ -41,7 +45,7 @@ export default function DashboardPage() {
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
-        .maybeSingle<Pick<Profile, "full_name">>();
+        .maybeSingle<ProfileName>();
 
       const metadataName =
         typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null;
