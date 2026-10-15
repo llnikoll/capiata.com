@@ -20,7 +20,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
 
   return (
     <Link
-      href={`/explorar?categoria=${category.slug}`}
+      href={`/categoria/${category.slug}`}
       className="group p-4 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col items-start justify-between gap-3 relative overflow-hidden"
     >
       <div className="flex items-center justify-between w-full">

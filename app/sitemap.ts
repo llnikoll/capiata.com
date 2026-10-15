@@ -1,9 +1,10 @@
 import { MetadataRoute } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getCategories, getListings } from "@/lib/supabase/queries";
+import { NEIGHBORHOODS } from "@/lib/neighborhoods";
 
 /**
- * Sitemap dinámico: categorías y publicaciones activas reales de Supabase.
+ * Sitemap dinámico: categorías, barrios y publicaciones activas reales de Supabase.
  * Si la base no responde, se devuelven igual las rutas estáticas para no
  * romper el build ni servir un sitemap vacío.
  */
@@ -49,6 +50,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // Los barrios son una lista fija: siempre se pueden indexar.
+  const barrioRoutes: MetadataRoute.Sitemap = NEIGHBORHOODS.map((neighborhood) => ({
+    url: `${baseUrl}/barrio/${neighborhood.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "daily",
+    priority: 0.7,
+  }));
+
   try {
     const supabase = createPublicClient();
     const [categories, listings] = await Promise.all([
@@ -57,7 +66,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ]);
 
     const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
-      url: `${baseUrl}/explorar?categoria=${category.slug}`,
+      url: `${baseUrl}/categoria/${category.slug}`,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.8,
@@ -70,8 +79,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     }));
 
-    return [...staticRoutes, ...categoryRoutes, ...listingRoutes];
+    return [...staticRoutes, ...categoryRoutes, ...barrioRoutes, ...listingRoutes];
   } catch {
-    return staticRoutes;
+    return [...staticRoutes, ...barrioRoutes];
   }
 }

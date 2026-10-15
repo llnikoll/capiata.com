@@ -62,3 +62,48 @@ export const BusinessJsonLd: React.FC<{ business: Business }> = ({ business }) =
     />
   );
 };
+
+interface CollectionJsonLdProps {
+  name: string;
+  description: string;
+  url: string;
+  items: Array<{ name: string; url: string }>;
+}
+
+/**
+ * Datos estructurados para las páginas de colección (categoría o barrio):
+ * le dicen a Google que es una lista de publicaciones, no contenido suelto.
+ */
+export const CollectionJsonLd: React.FC<CollectionJsonLdProps> = ({
+  name,
+  description,
+  url,
+  items,
+}) => {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name,
+    description,
+    url,
+    inLanguage: "es-PY",
+    isPartOf: { "@type": "WebSite", name: "Capiatá Conecta", url: "https://capiata.com" },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: items.length,
+      itemListElement: items.slice(0, 20).map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.name,
+        url: item.url,
+      })),
+    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+};

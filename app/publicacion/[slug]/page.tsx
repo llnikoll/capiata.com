@@ -19,7 +19,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   try {
     const listing = await getListingBySlug(createPublicClient(), slug);
-    if (!listing) return {};
+    if (!listing) {
+      return { title: "Publicación no encontrada", robots: { index: false, follow: false } };
+    }
 
     return {
       title: listing.title,

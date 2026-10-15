@@ -68,27 +68,27 @@ export const Footer = () => {
             </h4>
             <ul className="space-y-2 text-xs text-gray-300">
               <li>
-                <Link href="/explorar?categoria=servicios-tecnicos" className="hover:text-white transition-colors">
+                <Link href="/categoria/servicios-tecnicos" className="hover:text-white transition-colors">
                   Servicios Técnicos y Oficios
                 </Link>
               </li>
               <li>
-                <Link href="/explorar?categoria=gastronomia-comidas" className="hover:text-white transition-colors">
+                <Link href="/categoria/gastronomia-comidas" className="hover:text-white transition-colors">
                   Gastronomía y Comidas
                 </Link>
               </li>
               <li>
-                <Link href="/explorar?categoria=construccion-hogar" className="hover:text-white transition-colors">
+                <Link href="/categoria/construccion-hogar" className="hover:text-white transition-colors">
                   Construcción y Hogar
                 </Link>
               </li>
               <li>
-                <Link href="/explorar?categoria=vehiculos-motos" className="hover:text-white transition-colors">
+                <Link href="/categoria/vehiculos-motos" className="hover:text-white transition-colors">
                   Vehículos y Motos
                 </Link>
               </li>
               <li>
-                <Link href="/explorar?categoria=empleos-trabajo" className="hover:text-white transition-colors">
+                <Link href="/categoria/empleos-trabajo" className="hover:text-white transition-colors">
                   Empleos y Trabajo
                 </Link>
               </li>
