@@ -56,7 +56,28 @@ export interface ListingQueryOptions {
 
 function fail(message: string, error: unknown): never {
   if (error instanceof SupabaseQueryError) throw error;
-  throw new SupabaseQueryError(message, error);
+
+  // Adjuntamos el detalle de PostgREST (código, mensaje, detalle y sugerencia)
+  // para que la interfaz muestre la causa real y no un mensaje genérico.
+  const detail = describePostgrestError(error);
+  throw new SupabaseQueryError(detail ? `${message} [${detail}]` : message, error);
+}
+
+function describePostgrestError(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+
+  const { code, message, details, hint } = error as {
+    code?: string;
+    message?: string;
+    details?: string;
+    hint?: string;
+  };
+
+  const parts = [code, message, details, hint].filter(
+    (part): part is string => Boolean(part) && part !== "null"
+  );
+
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 /** Limpia caracteres con significado en la sintaxis de filtros de PostgREST. */
@@ -252,6 +273,10 @@ export interface ListingUpdateInput {
 /**
  * Guarda los cambios de una publicación existente.
  * El slug NO se modifica para no romper los enlaces ya compartidos.
+ *
+ * La mutación NO usa recursos embebidos (solo `select("id")`): los embeds en
+ * mutaciones son frágiles y devuelven 400 ante cambios de esquema. La versión
+ * completa se relee después con `getListingById`.
  */
 export async function updateListing(
   supabase: SupabaseClient,
@@ -262,12 +287,23 @@ export async function updateListing(
     .update({ ...input.values, updated_at: new Date().toISOString() })
     .eq("id", input.listingId)
     .eq("user_id", input.userId)
-    .select(LISTING_SELECT)
-    .single();
+    .select("id");
 
   if (error) fail("No pudimos guardar los cambios de la publicación.", error);
 
-  return sortImages(data as unknown as Listing);
+  if (!data || data.length === 0) {
+    throw new SupabaseQueryError(
+      "No se actualizó ninguna fila: la publicación no existe, no te pertenece o la sesión expiró. " +
+        "Recargá la página y volvé a iniciar sesión si el problema continúa."
+    );
+  }
+
+  const updated = await getListingById(supabase, input.listingId);
+  if (!updated) {
+    throw new SupabaseQueryError("La publicación se actualizó pero no pudimos volver a leerla.");
+  }
+
+  return updated;
 }
 
 /** Quita filas de imágenes de una publicación (RLS exige ser el dueño). */
