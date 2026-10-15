@@ -21,8 +21,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const listing = await getListingBySlug(createPublicClient(), slug);
     if (!listing) return {};
 
-    const image = listing.images?.[0]?.image_url;
-
     return {
       title: listing.title,
       description: listing.description.slice(0, 160),
@@ -33,13 +31,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         url: `${SITE_URL}/publicacion/${listing.slug}`,
         type: "article",
         locale: "es_PY",
-        ...(image ? { images: [{ url: image, alt: listing.title }] } : {}),
       },
+      // La imagen de la vista previa la genera app/publicacion/[slug]/opengraph-image.tsx
+      // con los datos reales: título, precio, barrio y la foto de la publicación.
       twitter: {
         card: "summary_large_image",
         title: listing.title,
         description: listing.description.slice(0, 160),
-        ...(image ? { images: [image] } : {}),
       },
       robots: { index: true, follow: true },
     };
