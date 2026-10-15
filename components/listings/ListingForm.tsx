@@ -39,6 +39,7 @@ import {
   validateImageFile,
 } from "@/lib/supabase/storage";
 import { SupabaseQueryError, toErrorMessage } from "@/lib/supabase/errors";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeWhatsAppNumber } from "@/lib/utils";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useCategories } from "@/lib/hooks/useCategories";
@@ -94,6 +95,7 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [imageWarnings, setImageWarnings] = useState<string[]>([]);
 
   const previewUrlsRef = useRef<string[]>([]);
 
@@ -228,6 +230,130 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
     });
   };
 
+  /**
+   * Sube las fotos nuevas y sincroniza la galería de la publicación.
+   *
+   * Nunca lanza por un problema de fotos: devuelve los avisos para mostrárselos
+   * al usuario, de modo que los datos ya guardados nunca se pierdan por una
+   * imagen que no se pudo subir (por ejemplo, si falta la política de Storage).
+   */
+  const syncGallery = async (input: {
+    supabase: SupabaseClient;
+    userId: string;
+    listingId: string;
+    currentItems: ImageItem[];
+    originalImages: NonNullable<Listing["images"]>;
+    uploadedUrls: string[];
+  }): Promise<string[]> => {
+    const { supabase, userId, listingId, currentItems, originalImages, uploadedUrls } = input;
+    const warnings: string[] = [];
+
+    // 1. Subir las fotos nuevas una por una: si una falla, el resto continúa.
+    const uploadedByIndex = new Map<number, string>();
+    for (let index = 0; index < currentItems.length; index += 1) {
+      const item = currentItems[index];
+      if (item.kind !== "new") continue;
+
+      try {
+        const url = await uploadPublicImage(supabase, LISTING_IMAGES_BUCKET, item.file, userId);
+        uploadedByIndex.set(index, url);
+        uploadedUrls.push(url);
+      } catch (error) {
+        warnings.push(`${item.file.name}: ${toErrorMessage(error, "no se pudo subir la foto")}`);
+      }
+    }
+
+    // 2. Quitar de la base (y de Storage) las fotos que ya no están.
+    const keptIds = currentItems
+      .filter((item): item is Extract<ImageItem, { kind: "existing" }> => item.kind === "existing")
+      .map((item) => item.id);
+    const removedIds = originalImages
+      .map((image) => image.id)
+      .filter((id) => !keptIds.includes(id));
+
+    if (removedIds.length > 0) {
+      try {
+        await deleteListingImages(supabase, removedIds);
+        await Promise.all(
+          originalImages
+            .filter((image) => removedIds.includes(image.id))
+            .map((image) =>
+              deleteImageByPublicUrl(supabase, LISTING_IMAGES_BUCKET, image.image_url).catch(
+                () => undefined
+              )
+            )
+        );
+      } catch (error) {
+        warnings.push(`No pudimos quitar una foto: ${toErrorMessage(error, "error")}`);
+      }
+    }
+
+    // 3. Vincular a la publicación las fotos que sí se subieron.
+    const rows = currentItems
+      .map((item, index) =>
+        item.kind === "new" && uploadedByIndex.has(index)
+          ? { listingId, url: uploadedByIndex.get(index)!, position: index }
+          : null
+      )
+      .filter((row): row is { listingId: string; url: string; position: number } => row !== null);
+
+    let inserted: Array<{ id: string; image_url: string; position: number }> = [];
+    if (rows.length > 0) {
+      try {
+        inserted = await insertListingImages(supabase, rows);
+      } catch (error) {
+        warnings.push(
+          `Las fotos se subieron pero no se pudieron vincular: ${toErrorMessage(error, "error")}`
+        );
+        // Sin fila en la base el archivo quedaría huérfano: lo borramos.
+        await Promise.all(
+          rows.map((row) =>
+            deleteImageByPublicUrl(supabase, LISTING_IMAGES_BUCKET, row.url).catch(() => undefined)
+          )
+        );
+      }
+    }
+
+    // 4. Las fotos recién subidas pasan a "existentes": si el usuario guarda de
+    //    nuevo, no se vuelven a subir ni se duplican.
+    if (inserted.length > 0) {
+      const idByUrl = new Map(inserted.map((row) => [row.image_url, row.id]));
+
+      setItems(
+        currentItems.map((item, index) => {
+          if (item.kind !== "new") return item;
+
+          const url = uploadedByIndex.get(index);
+          const id = url ? idByUrl.get(url) : undefined;
+          if (!url || !id) return item;
+
+          URL.revokeObjectURL(item.previewUrl);
+          previewUrlsRef.current = previewUrlsRef.current.filter(
+            (preview) => preview !== item.previewUrl
+          );
+          return { kind: "existing" as const, id, url };
+        })
+      );
+    }
+
+    // 5. Reordenar para respetar la portada elegida.
+    const originalOrder = originalImages.map((image) => image.id);
+    const reorder = currentItems
+      .map((item, index) => (item.kind === "existing" ? { id: item.id, position: index } : null))
+      .filter((row): row is { id: string; position: number } => row !== null)
+      .filter((row) => originalOrder.indexOf(row.id) !== row.position);
+
+    if (reorder.length > 0) {
+      try {
+        await updateListingImagePositions(supabase, reorder);
+      } catch (error) {
+        warnings.push(`No pudimos reordenar las fotos: ${toErrorMessage(error, "error")}`);
+      }
+    }
+
+    return warnings;
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitError(null);
@@ -256,22 +382,13 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
     }
 
     setIsSubmitting(true);
+    setImageWarnings([]);
     const uploadedUrls: string[] = [];
 
     try {
       const supabase = createClient();
 
-      // 1. Subimos las fotos nuevas primero, para poder limpiarlas si algo falla.
-      const uploadedByIndex = new Map<number, string>();
-      for (let index = 0; index < items.length; index += 1) {
-        const item = items[index];
-        if (item.kind !== "new") continue;
-        const url = await uploadPublicImage(supabase, LISTING_IMAGES_BUCKET, item.file, user.id);
-        uploadedUrls.push(url);
-        uploadedByIndex.set(index, url);
-      }
-
-      // 2. Resolvemos la categoría real de la base.
+      // 1. Resolvemos la categoría real de la base.
       const category = await getCategoryBySlug(supabase, parsed.data.categorySlug);
       if (!category) {
         throw new SupabaseQueryError(
@@ -283,6 +400,7 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
 
       if (isEdit && listing) {
         /* ------------------------------- EDICIÓN ------------------------------ */
+        // Los datos se guardan PRIMERO: si las fotos fallan, el texto ya quedó.
         await updateListing(supabase, {
           listingId: listing.id,
           userId: user.id,
@@ -297,69 +415,16 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
           },
         });
 
-        // Galería: quitar las que ya no están, agregar las nuevas y reordenar.
-        const keptIds = items
-          .filter((item): item is Extract<ImageItem, { kind: "existing" }> => item.kind === "existing")
-          .map((item) => item.id);
-        const removedIds = (listing.images ?? [])
-          .map((image) => image.id)
-          .filter((id) => !keptIds.includes(id));
-
-        if (removedIds.length > 0) {
-          await deleteListingImages(supabase, removedIds);
-          const removedUrls = (listing.images ?? [])
-            .filter((image) => removedIds.includes(image.id))
-            .map((image) => image.image_url);
-          await Promise.all(
-            removedUrls.map((url) =>
-              deleteImageByPublicUrl(supabase, LISTING_IMAGES_BUCKET, url).catch(() => undefined)
-            )
-          );
-        }
-
-        const inserted = await insertListingImages(
+        const warnings = await syncGallery({
           supabase,
-          items
-            .map((item, index) =>
-              item.kind === "new"
-                ? { listingId: listing.id, url: uploadedByIndex.get(index)!, position: index }
-                : null
-            )
-            .filter((row): row is { listingId: string; url: string; position: number } => row !== null)
-        );
+          userId: user.id,
+          listingId: listing.id,
+          currentItems: items,
+          originalImages: listing.images ?? [],
+          uploadedUrls,
+        });
 
-        // Las fotos recién subidas pasan a ser "existentes": si el usuario guarda
-        // otra vez, no se vuelven a subir ni se duplican.
-        if (inserted.length > 0) {
-          const idByUrl = new Map(inserted.map((row) => [row.image_url, row.id]));
-
-          setItems(
-            items.map((item, index) => {
-              if (item.kind !== "new") return item;
-
-              const url = uploadedByIndex.get(index);
-              const id = url ? idByUrl.get(url) : undefined;
-              if (!url || !id) return item;
-
-              URL.revokeObjectURL(item.previewUrl);
-              previewUrlsRef.current = previewUrlsRef.current.filter(
-                (preview) => preview !== item.previewUrl
-              );
-              return { kind: "existing" as const, id, url };
-            })
-          );
-        }
-
-        const originalOrder = (listing.images ?? []).map((image) => image.id);
-        const reorder = items
-          .map((item, index) => (item.kind === "existing" ? { id: item.id, position: index } : null))
-          .filter((row): row is { id: string; position: number } => row !== null)
-          .filter((row) => originalOrder.indexOf(row.id) !== row.position);
-
-        if (reorder.length > 0) {
-          await updateListingImagePositions(supabase, reorder);
-        }
-
+        setImageWarnings(warnings);
         setIsSaved(true);
         router.refresh();
       } else {
@@ -396,17 +461,16 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
           );
         }
 
-        await insertListingImages(
+        const warnings = await syncGallery({
           supabase,
-          items
-            .map((item, index) =>
-              item.kind === "new" && uploadedByIndex.has(index)
-                ? { listingId: created.id, url: uploadedByIndex.get(index)!, position: index }
-                : null
-            )
-            .filter((row): row is { listingId: string; url: string; position: number } => row !== null)
-        );
+          userId: user.id,
+          listingId: created.id,
+          currentItems: items,
+          originalImages: [],
+          uploadedUrls,
+        });
 
+        setImageWarnings(warnings);
         setCreatedSlug(created.slug);
         router.refresh();
       }
@@ -450,6 +514,18 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
           <p className="text-xs text-gray-500 leading-relaxed">
             Ya está disponible públicamente en Capiatá Conecta. Los vecinos interesados podrán contactarte directamente por WhatsApp.
           </p>
+
+          {imageWarnings.length > 0 && (
+            <Alert variant="warning" className="text-left">
+              <strong>No pudimos subir todas las fotos:</strong>
+              <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                {imageWarnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+              Podés agregarlas más tarde desde <strong>Editar</strong>.
+            </Alert>
+          )}
           <div className="pt-3 flex flex-col gap-2">
             <Link href={`/publicacion/${createdSlug}`}>
               <Button variant="primary" className="w-full">
@@ -488,6 +564,20 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
       className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6"
     >
       {submitError && <Alert variant="error">{submitError}</Alert>}
+
+      {imageWarnings.length > 0 && (
+        <Alert variant="warning">
+          <strong>
+            Los datos se guardaron, pero hubo {imageWarnings.length === 1 ? "un problema con una foto" : `problemas con ${imageWarnings.length} fotos`}:
+          </strong>
+          <ul className="list-disc pl-4 mt-1 space-y-0.5">
+            {imageWarnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </Alert>
+      )}
+
       {isSaved && (
         <Alert variant="success">
           Cambios guardados correctamente.{" "}

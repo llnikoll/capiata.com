@@ -1,9 +1,9 @@
 import React from "react";
-import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface AlertProps {
-  variant?: "error" | "success" | "info";
+  variant?: "error" | "success" | "info" | "warning";
   children: React.ReactNode;
   className?: string;
   onRetry?: () => void;
@@ -14,12 +14,14 @@ const variantStyles = {
   error: "bg-red-50 text-red-700 border-red-200",
   success: "bg-emerald-50 text-emerald-800 border-emerald-200",
   info: "bg-blue-50 text-[#1E3A5F] border-blue-200",
+  warning: "bg-amber-50 text-amber-900 border-amber-200",
 };
 
 const icons = {
   error: AlertCircle,
   success: CheckCircle2,
   info: Info,
+  warning: AlertTriangle,
 };
 
 /** Mensaje inline reutilizable para errores de red, validaciones y confirmaciones. */
