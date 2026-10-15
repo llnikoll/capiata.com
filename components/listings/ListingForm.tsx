@@ -406,12 +406,12 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
           userId: user.id,
           values: {
             type: parsed.data.type,
-            categoryId: category.id,
+            category_id: category.id,
             title: parsed.data.title,
             description: parsed.data.description,
             price: priceValue,
             neighborhood: parsed.data.neighborhood,
-            contactWhatsapp: normalizeWhatsAppNumber(parsed.data.contactWhatsapp),
+            contact_whatsapp: normalizeWhatsAppNumber(parsed.data.contactWhatsapp),
           },
         });
 

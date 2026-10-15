@@ -108,6 +108,127 @@ console.log("\nCONTRATO DE COLUMNAS (lo que consulta la app)");
   }
 }
 
+/* ----------------------------------------- payloads de escritura de la app */
+// PostgREST valida las claves del payload contra el esquema ANTES de aplicar
+// RLS, así que un JSON con una clave inventada (p. ej. `categoryId` en vez de
+// `category_id`) devuelve 400 PGRST204 incluso sin sesión. Esta sección replica
+// los payloads reales que envía la aplicación para detectar ese error acá.
+console.log("\nPAYLOADS DE ESCRITURA (claves = columnas reales)");
+{
+  const DUMMY = "00000000-0000-0000-0000-000000000000";
+  const ahora = new Date().toISOString();
+
+  const payloads = [
+    {
+      nombre: "listings · edición (updateListing)",
+      tabla: "listings",
+      metodo: "PATCH",
+      query: `?id=eq.${DUMMY}`,
+      body: {
+        type: "OFFER",
+        category_id: DUMMY,
+        title: "health-check",
+        description: "health-check",
+        price: 1,
+        neighborhood: "Centro",
+        contact_whatsapp: "595981000000",
+        updated_at: ahora,
+      },
+    },
+    {
+      nombre: "listings · creación",
+      tabla: "listings",
+      metodo: "POST",
+      query: "",
+      body: {
+        user_id: DUMMY,
+        business_id: null,
+        type: "OFFER",
+        category_id: DUMMY,
+        title: "health-check",
+        slug: `health-check-${Date.now()}`,
+        description: "health-check",
+        price: null,
+        currency: "GS",
+        location: "Capiatá",
+        neighborhood: "Centro",
+        contact_whatsapp: "595981000000",
+        contact_method: ["whatsapp"],
+        status: "active",
+      },
+    },
+    {
+      nombre: "listing_images · alta",
+      tabla: "listing_images",
+      metodo: "POST",
+      query: "",
+      body: { listing_id: DUMMY, image_url: "https://example.com/x.jpg", position: 0 },
+    },
+    {
+      nombre: "businesses · alta/edición",
+      tabla: "businesses",
+      metodo: "POST",
+      query: "",
+      body: {
+        user_id: DUMMY,
+        business_name: "health-check",
+        logo_url: null,
+        description: null,
+        category: null,
+        phone: null,
+        whatsapp: null,
+        address: null,
+        schedule: null,
+        social_links: null,
+      },
+    },
+    {
+      nombre: "profiles · edición",
+      tabla: "profiles",
+      metodo: "PATCH",
+      query: `?id=eq.${DUMMY}`,
+      body: {
+        full_name: "health-check",
+        phone: "595981000000",
+        bio: null,
+        neighborhood: "Centro",
+        city: "Capiatá",
+        user_type: "person",
+        avatar_url: null,
+      },
+    },
+    {
+      nombre: "favorites · alta",
+      tabla: "favorites",
+      metodo: "POST",
+      query: "",
+      body: { user_id: DUMMY, listing_id: DUMMY },
+    },
+    {
+      nombre: "reports · alta",
+      tabla: "reports",
+      metodo: "POST",
+      query: "",
+      body: { reporter_id: DUMMY, listing_id: DUMMY, reason: "other", description: null },
+    },
+  ];
+
+  for (const item of payloads) {
+    const res = await fetch(`${URL_BASE}/rest/v1/${item.tabla}${item.query}`, {
+      method: item.metodo,
+      headers: { ...anonHeaders, "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(item.body),
+    });
+    const text = await res.text();
+    const claveInvalida = res.status === 400 && /PGRST204|42703/.test(text);
+    check(
+      !claveInvalida,
+      item.nombre,
+      claveInvalida ? text.slice(0, 160) : `HTTP ${res.status} (columnas aceptadas)`
+    );
+  }
+}
+
 /* ------------------------------------------------------------------- RLS */
 console.log("\nROW LEVEL SECURITY");
 {

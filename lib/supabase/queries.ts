@@ -260,14 +260,21 @@ export async function getListingById(
   return sortImages(data as unknown as Listing);
 }
 
+/**
+ * Campos editables de una publicación.
+ *
+ * IMPORTANTE: las claves deben ser EXACTAMENTE los nombres de las columnas
+ * (`category_id`, `contact_whatsapp`, …) porque el objeto se envía tal cual a
+ * PostgREST; una clave en formato JavaScript provoca un error 400 PGRST204.
+ */
 export interface ListingUpdateInput {
   type: ListingType;
-  categoryId: string;
+  category_id: string;
   title: string;
   description: string;
   price: number | null;
   neighborhood: string;
-  contactWhatsapp: string;
+  contact_whatsapp: string;
 }
 
 /**
@@ -282,9 +289,21 @@ export async function updateListing(
   supabase: SupabaseClient,
   input: { listingId: string; userId: string; values: ListingUpdateInput }
 ): Promise<Listing> {
+  // Payload explícito: sólo columnas reales de public.listings.
+  const payload = {
+    type: input.values.type,
+    category_id: input.values.category_id,
+    title: input.values.title,
+    description: input.values.description,
+    price: input.values.price,
+    neighborhood: input.values.neighborhood,
+    contact_whatsapp: input.values.contact_whatsapp,
+    updated_at: new Date().toISOString(),
+  };
+
   const { data, error } = await supabase
     .from("listings")
-    .update({ ...input.values, updated_at: new Date().toISOString() })
+    .update(payload)
     .eq("id", input.listingId)
     .eq("user_id", input.userId)
     .select("id");
