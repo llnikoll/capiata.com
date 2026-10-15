@@ -46,6 +46,19 @@ import { useCategories } from "@/lib/hooks/useCategories";
 
 const MAX_IMAGES = 6;
 
+/** Aviso para cuentas bloqueadas por moderación (el bloqueo real lo aplica RLS). */
+function BlockedNotice() {
+  return (
+    <Alert variant="error">
+      <strong>Tu cuenta está bloqueada.</strong>
+      <p className="mt-1">
+        Un administrador de Capiatá Conecta la marcó como bloqueada, así que por ahora no podés
+        publicar ni editar publicaciones. Podés seguir navegando el contenido del sitio.
+      </p>
+    </Alert>
+  );
+}
+
 type ImageItem =
   | { kind: "existing"; id: string; url: string }
   | { kind: "new"; file: File; previewUrl: string };
@@ -96,6 +109,7 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
   const [createdSlug, setCreatedSlug] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [imageWarnings, setImageWarnings] = useState<string[]>([]);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const previewUrlsRef = useRef<string[]>([]);
 
@@ -108,19 +122,26 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
     []
   );
 
-  // En creación precargamos los datos de contacto del perfil real.
+  // Perfil del usuario: detectamos el bloqueo y (sólo al crear) precargamos
+  // los datos de contacto.
   useEffect(() => {
-    if (isEdit || !user) return;
+    if (!user) return;
     let active = true;
 
     (async () => {
       try {
         const supabase = createClient();
         const profile = await getProfile(supabase, user.id);
-        if (!active) return;
+        if (!active || !profile) return;
 
-        if (profile?.phone) setWhatsapp((current) => current || profile.phone!);
-        if (profile?.neighborhood) setNeighborhood((current) => current || profile.neighborhood!);
+        if (profile.is_blocked) setIsBlocked(true);
+
+        if (isEdit) return;
+
+        if (profile.phone) setWhatsapp((current) => current || profile.phone!);
+        if (profile.neighborhood) {
+          setNeighborhood((current) => current || profile.neighborhood!);
+        }
       } catch {
         // El prefill es opcional.
       }
@@ -359,6 +380,13 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
     setSubmitError(null);
     setFieldErrors({});
     setIsSaved(false);
+
+    if (isBlocked) {
+      setSubmitError(
+        "Tu cuenta está bloqueada: no podés publicar ni editar hasta que un administrador la revise."
+      );
+      return;
+    }
 
     const parsed = validateForm(listingFormSchema, {
       type,
@@ -822,7 +850,7 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
   );
 
   if (isEdit) {
-    return form;
+    return isBlocked ? <BlockedNotice /> : form;
   }
 
   return (
@@ -839,6 +867,8 @@ export function ListingForm({ mode, listing, initialType }: ListingFormProps) {
           <div className="bg-white p-8 rounded-3xl border border-gray-100 text-center text-sm text-gray-500">
             Verificando tu sesión...
           </div>
+        ) : isBlocked ? (
+          <BlockedNotice />
         ) : !user ? (
           <Alert variant="info">
             Necesitás iniciar sesión para publicar.{" "}

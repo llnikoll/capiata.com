@@ -80,11 +80,6 @@ function describePostgrestError(error: unknown): string | null {
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
-/** Limpia caracteres con significado en la sintaxis de filtros de PostgREST. */
-function sanitizeSearchTerm(term: string): string {
-  return term.replace(/[,()%\\*]/g, " ").trim();
-}
-
 function sortImages(listing: Listing): Listing {
   if (listing.images?.length) {
     listing.images = [...listing.images].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
@@ -96,53 +91,93 @@ function sortImages(listing: Listing): Listing {
 /* Publicaciones                                                       */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Normaliza el texto de búsqueda igual que la columna `listings.search_text`
+ * (minúsculas y sin tildes), para que "reparacion" encuentre "Reparación".
+ */
+export function normalizeSearchTerm(term: string): string {
+  return term
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[,()%\\*]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** ¿El error indica que la columna search_text todavía no existe? */
+function isMissingSearchColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const { code, message } = error as { code?: string; message?: string };
+  return (
+    (code === "PGRST204" || code === "42703") && Boolean(message?.includes("search_text"))
+  );
+}
+
 export async function getListings(
   supabase: SupabaseClient,
   options: ListingQueryOptions = {}
 ): Promise<Listing[]> {
-  let query = supabase.from("listings").select(LISTING_SELECT);
+  const term = options.searchQuery ? normalizeSearchTerm(options.searchQuery) : "";
 
-  if (!options.includeAllStatuses) {
-    query = query.eq("status", "active");
-  }
+  const buildQuery = (searchMode: "normalized" | "legacy") => {
+    let query = supabase.from("listings").select(LISTING_SELECT);
 
-  if (options.type) {
-    query = query.eq("type", options.type);
-  }
-
-  if (options.categorySlug) {
-    const categoryId = await getCategoryIdBySlug(supabase, options.categorySlug);
-    if (!categoryId) return [];
-    query = query.eq("category_id", categoryId);
-  }
-
-  if (options.neighborhood) {
-    query = query.eq("neighborhood", options.neighborhood);
-  }
-
-  if (options.searchQuery) {
-    const term = sanitizeSearchTerm(options.searchQuery);
-    if (term) {
-      query = query.or(`title.ilike.%${term}%,description.ilike.%${term}%`);
+    if (!options.includeAllStatuses) {
+      query = query.eq("status", "active");
     }
+
+    if (options.type) {
+      query = query.eq("type", options.type);
+    }
+
+    if (categoryId) {
+      query = query.eq("category_id", categoryId);
+    }
+
+    if (options.neighborhood) {
+      query = query.eq("neighborhood", options.neighborhood);
+    }
+
+    if (term) {
+      // `search_text` está en minúsculas y sin tildes (migración 005).
+      query =
+        searchMode === "normalized"
+          ? query.ilike("search_text", `%${term}%`)
+          : query.or(`title.ilike.%${term}%,description.ilike.%${term}%`);
+    }
+
+    switch (options.sort) {
+      case "price_asc":
+        query = query.order("price", { ascending: true, nullsFirst: false });
+        break;
+      case "price_desc":
+        query = query.order("price", { ascending: false, nullsFirst: false });
+        break;
+      default:
+        query = query.order("created_at", { ascending: false });
+    }
+
+    const limit = options.limit ?? 60;
+    const offset = options.offset ?? 0;
+
+    return query.range(offset, offset + limit - 1);
+  };
+
+  const categoryId = options.categorySlug
+    ? await getCategoryIdBySlug(supabase, options.categorySlug)
+    : null;
+
+  if (options.categorySlug && !categoryId) return [];
+
+  let { data, error } = await buildQuery("normalized");
+
+  // Si la migración 005 aún no se aplicó, seguimos funcionando con la búsqueda
+  // anterior (sensible a tildes) en lugar de romper el listado.
+  if (error && term && isMissingSearchColumn(error)) {
+    ({ data, error } = await buildQuery("legacy"));
   }
 
-  switch (options.sort) {
-    case "price_asc":
-      query = query.order("price", { ascending: true, nullsFirst: false });
-      break;
-    case "price_desc":
-      query = query.order("price", { ascending: false, nullsFirst: false });
-      break;
-    default:
-      query = query.order("created_at", { ascending: false });
-  }
-
-  const limit = options.limit ?? 60;
-  const offset = options.offset ?? 0;
-  query = query.range(offset, offset + limit - 1);
-
-  const { data, error } = await query;
   if (error) fail("No pudimos cargar las publicaciones.", error);
 
   return ((data ?? []) as unknown as Listing[]).map(sortImages);

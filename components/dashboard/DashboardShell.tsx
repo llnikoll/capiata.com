@@ -24,6 +24,7 @@ type ProfileData = {
   avatar_url: string | null;
   user_type: string;
   neighborhood: string | null;
+  is_blocked?: boolean;
 };
 
 const sidebarLinks = [
@@ -163,7 +164,16 @@ export function DashboardShell({
             </div>
           </aside>
 
-          <main className="lg:col-span-9 space-y-6">{children}</main>
+          <main className="lg:col-span-9 space-y-6">
+            {profile?.is_blocked && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">
+                <strong>Tu cuenta está bloqueada.</strong> No podés publicar ni editar
+                publicaciones hasta que un administrador la revise. Tus anuncios publicados
+                siguen visibles.
+              </div>
+            )}
+            {children}
+          </main>
         </div>
       </div>
     </div>
