@@ -80,6 +80,34 @@ for (const table of ["listings", "listing_images", "profiles", "businesses", "fa
   check(status === 200, `Tabla public.${table} responde`, `HTTP ${status}`);
 }
 
+/* ------------------------------------------------- contrato app <-> base */
+// Cada columna que el código consulta debe existir: si falta una, PostgREST
+// responde 400 nombrando la columna inexistente.
+console.log("\nCONTRATO DE COLUMNAS (lo que consulta la app)");
+{
+  const CONTRATO = {
+    profiles:
+      "id,username,full_name,avatar_url,phone,bio,city,neighborhood,user_type,is_verified,is_blocked,created_at",
+    businesses:
+      "id,user_id,business_name,logo_url,description,category,phone,whatsapp,address,schedule,social_links,created_at",
+    categories: "id,name,slug,icon,color,description,is_active,listing_count",
+    listings:
+      "id,user_id,business_id,type,category_id,title,slug,description,price,currency,location,neighborhood,contact_whatsapp,contact_phone,contact_method,status,views_count,created_at,updated_at",
+    listing_images: "id,listing_id,image_url,position",
+    favorites: "id,user_id,listing_id,created_at",
+    reports: "id,reporter_id,listing_id,reason,description,status,created_at",
+  };
+
+  for (const [table, columns] of Object.entries(CONTRATO)) {
+    const { status, json } = await rest(`/rest/v1/${table}?select=${columns}&limit=1`);
+    check(
+      status === 200,
+      `Columnas de ${table}`,
+      status === 200 ? "" : (json?.message ?? `HTTP ${status}`)
+    );
+  }
+}
+
 /* ------------------------------------------------------------------- RLS */
 console.log("\nROW LEVEL SECURITY");
 {
@@ -132,11 +160,28 @@ console.log("\nMIGRACIONES (004_production_hardening / 002_increment_views)");
 
 /* --------------------------------------------------------------- storage */
 console.log("\nSTORAGE");
-for (const bucket of ["listings-images", "avatars"]) {
-  const res = await fetch(`${URL_BASE}/storage/v1/object/public/${bucket}/__health_check__.jpg`, { headers: anonHeaders });
-  const body = await res.text();
-  const exists = !body.includes("NoSuchBucket");
-  check(exists, `Bucket público "${bucket}" existe`, exists ? "" : "bucket ausente");
+{
+  // Una subida anónima distingue con certeza "bucket inexistente" de
+  // "bucket existente que rechaza correctamente por RLS".
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+    "base64"
+  );
+
+  for (const bucket of ["listings-images", "avatars"]) {
+    const res = await fetch(`${URL_BASE}/storage/v1/object/${bucket}/__health_check__/pixel.png`, {
+      method: "POST",
+      headers: { ...anonHeaders, "Content-Type": "image/png" },
+      body: png,
+    });
+    const body = await res.text();
+    const missing = body.includes("Bucket not found") || body.includes("NoSuchBucket");
+    check(
+      !missing,
+      `Bucket "${bucket}" existe y aplica RLS`,
+      missing ? "bucket ausente → ejecutá la migración 004" : "rechaza la subida anónima (correcto)"
+    );
+  }
 }
 
 /* ---------------------------------------------------------------- realtime */

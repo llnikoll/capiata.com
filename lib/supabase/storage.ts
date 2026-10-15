@@ -62,13 +62,46 @@ export async function uploadPublicImage(
 
   if (error) {
     throw new SupabaseQueryError(
-      `No pudimos subir la imagen "${file.name}". ${error.message}`,
+      `No pudimos subir la imagen "${file.name}". ${describeStorageError(bucket, error.message)}`,
       error
     );
   }
 
   const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
   return publicUrlData.publicUrl;
+}
+
+/**
+ * Traduce los errores de Supabase Storage a instrucciones accionables.
+ * Convierte un críptico "Bucket not found" en el paso exacto que falta.
+ */
+export function describeStorageError(bucket: string, message: string): string {
+  const detail = message.toLowerCase();
+
+  if (detail.includes("bucket not found")) {
+    return (
+      `El bucket "${bucket}" no existe en Supabase Storage. ` +
+      `Ejecutá supabase/migrations/004_production_hardening.sql en el SQL Editor: ` +
+      `crea los buckets "listings-images" y "avatars" con sus políticas de acceso.`
+    );
+  }
+
+  if (detail.includes("row-level security") || detail.includes("unauthorized")) {
+    return (
+      `Tu sesión no tiene permiso para escribir en "${bucket}". ` +
+      `Verificá que estés logueado y que las políticas de Storage de la migración 004 estén aplicadas.`
+    );
+  }
+
+  if (detail.includes("maximum allowed size") || detail.includes("entity too large")) {
+    return `La imagen supera el tamaño máximo permitido en "${bucket}" (5 MB).`;
+  }
+
+  if (detail.includes("mime") || detail.includes("content type")) {
+    return `El formato del archivo no está permitido en "${bucket}". Usá JPG, PNG, WebP o AVIF.`;
+  }
+
+  return message;
 }
 
 /** Extrae el path interno de un objeto a partir de su URL pública de Supabase. */

@@ -485,3 +485,25 @@ CREATE INDEX IF NOT EXISTS listings_description_trgm_idx
 
 -- Refrescamos la caché de esquema de la API REST.
 NOTIFY pgrst, 'reload schema';
+
+-- ============================================================================
+-- 14. CONTADOR DE VISTAS
+-- (mismo contenido que supabase/migrations/002_increment_views_function.sql)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION public.increment_views(listing_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.listings
+  SET views_count = views_count + 1
+  WHERE id = listing_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.increment_views(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.increment_views(UUID) TO anon;
+
+NOTIFY pgrst, 'reload schema';
