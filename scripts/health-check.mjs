@@ -140,8 +140,12 @@ console.log("\nMIGRACIONES (004_production_hardening / 002_increment_views)");
   const admin = await rest("/rest/v1/profiles?select=id,is_admin&limit=1");
   check(admin.status === 200, "Columna profiles.is_admin existe", admin.status === 400 ? "falta migración 004" : `HTTP ${admin.status}`);
 
-  const rpc = await rest("/rest/v1/rpc/is_admin", { method: "POST", body: "{}" });
-  check(rpc.status !== 404, "Función public.is_admin() existe", rpc.status === 404 ? "falta migración 004" : `HTTP ${rpc.status}`);
+  const rpc = await rest("/rest/v1/rpc/is_admin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  check(rpc.status === 200, "Función public.is_admin() existe", rpc.status === 404 ? "falta migración 004" : `HTTP ${rpc.status}`);
 
   const views = await rest("/rest/v1/rpc/increment_views", {
     method: "POST",
