@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
-import { CrearPublicacionForm } from "./CrearPublicacionForm";
+import { ListingForm } from "@/components/listings/ListingForm";
+import type { ListingType } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Crear Publicación",
@@ -9,10 +10,14 @@ export const metadata: Metadata = {
 };
 
 /**
- * El formulario lee `?tipo=OFFER|REQUEST` (API de runtime) y la sesión del
- * usuario, por eso se monta dentro de un límite de Suspense.
+ * La página lee `?tipo=OFFER|REQUEST` (API de runtime) y la sesión del usuario,
+ * por eso el formulario se monta dentro de un límite de Suspense.
  */
-export default function CrearPublicacionPage() {
+export default function CrearPublicacionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tipo?: string }>;
+}) {
   return (
     <Suspense
       fallback={
@@ -24,7 +29,18 @@ export default function CrearPublicacionPage() {
         </div>
       }
     >
-      <CrearPublicacionForm />
+      <CrearPublicacionContent searchParams={searchParams} />
     </Suspense>
   );
+}
+
+async function CrearPublicacionContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ tipo?: string }>;
+}) {
+  const { tipo } = await searchParams;
+  const initialType: ListingType = tipo === "REQUEST" ? "REQUEST" : "OFFER";
+
+  return <ListingForm mode="create" initialType={initialType} />;
 }

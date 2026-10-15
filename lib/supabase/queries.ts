@@ -222,6 +222,103 @@ export async function softDeleteListing(
   if (error) fail("No pudimos eliminar la publicación.", error);
 }
 
+/** Publicación por id (el dueño la ve aunque esté pausada; RLS filtra el resto). */
+export async function getListingById(
+  supabase: SupabaseClient,
+  listingId: string
+): Promise<Listing | null> {
+  const { data, error } = await supabase
+    .from("listings")
+    .select(LISTING_SELECT)
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (error) fail("No pudimos cargar la publicación.", error);
+  if (!data) return null;
+
+  return sortImages(data as unknown as Listing);
+}
+
+export interface ListingUpdateInput {
+  type: ListingType;
+  categoryId: string;
+  title: string;
+  description: string;
+  price: number | null;
+  neighborhood: string;
+  contactWhatsapp: string;
+}
+
+/**
+ * Guarda los cambios de una publicación existente.
+ * El slug NO se modifica para no romper los enlaces ya compartidos.
+ */
+export async function updateListing(
+  supabase: SupabaseClient,
+  input: { listingId: string; userId: string; values: ListingUpdateInput }
+): Promise<Listing> {
+  const { data, error } = await supabase
+    .from("listings")
+    .update({ ...input.values, updated_at: new Date().toISOString() })
+    .eq("id", input.listingId)
+    .eq("user_id", input.userId)
+    .select(LISTING_SELECT)
+    .single();
+
+  if (error) fail("No pudimos guardar los cambios de la publicación.", error);
+
+  return sortImages(data as unknown as Listing);
+}
+
+/** Quita filas de imágenes de una publicación (RLS exige ser el dueño). */
+export async function deleteListingImages(
+  supabase: SupabaseClient,
+  imageIds: string[]
+): Promise<void> {
+  if (imageIds.length === 0) return;
+
+  const { error } = await supabase.from("listing_images").delete().in("id", imageIds);
+  if (error) fail("No pudimos quitar las fotos seleccionadas.", error);
+}
+
+/** Agrega imágenes nuevas con su posición final y devuelve las filas creadas. */
+export async function insertListingImages(
+  supabase: SupabaseClient,
+  rows: Array<{ listingId: string; url: string; position: number }>
+): Promise<Array<{ id: string; image_url: string; position: number }>> {
+  if (rows.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("listing_images")
+    .insert(
+      rows.map((row) => ({
+        listing_id: row.listingId,
+        image_url: row.url,
+        position: row.position,
+      }))
+    )
+    .select("id, image_url, position");
+
+  if (error) fail("No pudimos guardar las fotos nuevas.", error);
+
+  return (data ?? []) as Array<{ id: string; image_url: string; position: number }>;
+}
+
+/** Reordena la galería (se usa para definir la portada). */
+export async function updateListingImagePositions(
+  supabase: SupabaseClient,
+  updates: Array<{ id: string; position: number }>
+): Promise<void> {
+  for (const update of updates) {
+    const { error } = await supabase
+      .from("listing_images")
+      .update({ position: update.position })
+      .eq("id", update.id);
+
+    if (error) fail("No pudimos reordenar las fotos.", error);
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Categorías y comercios                                              */
 /* ------------------------------------------------------------------ */
@@ -250,6 +347,22 @@ async function getCategoryIdBySlug(
 
   if (error) fail("No pudimos resolver la categoría seleccionada.", error);
   return data?.id ?? null;
+}
+
+/** Categoría completa por slug (para precargar el formulario de edición). */
+export async function getCategoryBySlug(
+  supabase: SupabaseClient,
+  slug: string
+): Promise<Category | null> {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name, slug, icon, color, description, is_active, listing_count")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) fail("No pudimos cargar la categoría.", error);
+
+  return (data as unknown as Category) ?? null;
 }
 
 export async function getBusinesses(

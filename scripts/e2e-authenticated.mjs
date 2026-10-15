@@ -357,6 +357,76 @@ console.log("\nPUBLICACIÓN, IMAGEN Y FEED PÚBLICO");
   check(anonInsert.status === 401 || anonInsert.status === 403, "Anónimo no puede publicar", `HTTP ${anonInsert.status}`);
 }
 
+/* --------------------------------------------------------------- edición */
+// Mismo camino que usa el formulario de edición: actualizar datos y sincronizar
+// la galería (agregar, quitar y reordenar fotos).
+console.log("\nEDICIÓN DE LA PUBLICACIÓN");
+{
+  const secondPath = `${userId}/e2e-segunda-${stamp}.png`;
+  const upload = await fetch(`${BASE}/storage/v1/object/listings-images/${secondPath}`, {
+    method: "POST",
+    headers: { ...authHeaders, "Content-Type": "image/png", "x-upsert": "true" },
+    body: TINY_PNG,
+  });
+  if (upload.status === 200) created.objects.push({ bucket: "listings-images", path: secondPath });
+  const secondUrl = `${BASE}/storage/v1/object/public/listings-images/${secondPath}`;
+
+  const nuevaTitulo = `E2E Editada ${stamp}`;
+  const patch = await api(
+    `/rest/v1/listings?id=eq.${created.listingId}&user_id=eq.${userId}`,
+    {
+      method: "PATCH",
+      headers: authHeaders,
+      body: {
+        title: nuevaTitulo,
+        price: 999999,
+        neighborhood: "Centro",
+        updated_at: new Date().toISOString(),
+      },
+      prefer: "return=representation",
+    }
+  );
+  check(
+    patch.json?.[0]?.title === nuevaTitulo && Number(patch.json?.[0]?.price) === 999999,
+    "Los datos de la publicación se actualizan",
+    patch.json?.[0]?.title ?? `HTTP ${patch.status}`
+  );
+
+  await api("/rest/v1/listing_images", {
+    method: "POST",
+    headers: authHeaders,
+    body: { listing_id: created.listingId, image_url: secondUrl, position: 1 },
+    prefer: "return=representation",
+  });
+
+  const gallery = await api(
+    `/rest/v1/listing_images?listing_id=eq.${created.listingId}&select=id,image_url,position&order=position.asc`,
+    { headers: authHeaders }
+  );
+  check(gallery.json?.length === 2, "Se agrega una segunda foto a la galería", `${gallery.json?.length ?? 0} fotos`);
+
+  const primera = gallery.json?.find((row) => row.image_url.includes(`/e2e-${stamp}.png`));
+  if (primera) {
+    await api(`/rest/v1/listing_images?id=eq.${primera.id}`, { method: "DELETE", headers: authHeaders });
+  }
+
+  const remaining = await api(
+    `/rest/v1/listing_images?listing_id=eq.${created.listingId}&select=id`,
+    { headers: authHeaders }
+  );
+  check(remaining.json?.length === 1, "Se elimina la foto quitada", `${remaining.json?.length ?? 0} fotos`);
+
+  const publicAfter = await api(
+    `/rest/v1/listings?slug=eq.${created.listingSlug}&select=title,price,neighborhood,images:listing_images(image_url)`,
+    { headers: anonHeaders }
+  );
+  const edited = publicAfter.json?.[0];
+  check(edited?.title === nuevaTitulo, "La edición se refleja en el feed público");
+  check(Number(edited?.price) === 999999, "El precio actualizado se refleja en el feed público");
+  check(edited?.images?.length === 1, "La galería actualizada viaja en el feed público");
+  check(edited?.neighborhood === "Centro", "El barrio actualizado se refleja en el feed público");
+}
+
 /* ---------------------------------------------------- favoritos y reportes */
 console.log("\nFAVORITOS Y REPORTES");
 {

@@ -12,6 +12,7 @@ import {
   MapPin,
   Eye,
   RefreshCw,
+  Edit3,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
@@ -227,10 +228,20 @@ export function MyListingsManager({ type }: MyListingsManagerProps) {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Link href={`/publicacion/${item.slug}`}>
                   <Button variant="ghost" size="sm">
                     Ver
+                  </Button>
+                </Link>
+
+                <Link href={`/dashboard/editar-publicacion?id=${item.id}`}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Edit3 className="w-4 h-4 text-[#1E3A5F]" />}
+                  >
+                    Editar
                   </Button>
                 </Link>
 

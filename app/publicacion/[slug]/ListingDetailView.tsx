@@ -34,6 +34,7 @@ import {
   ImageOff,
   Store,
   CheckCircle2,
+  Pencil,
 } from "lucide-react";
 
 interface ListingDetailViewProps {
@@ -158,13 +159,23 @@ export function ListingDetailView({ listing, related }: ListingDetailViewProps) 
   return (
     <div className="py-8 bg-gray-50/50 min-h-screen">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {/* Back Link */}
-        <Link
-          href="/explorar"
-          className="inline-flex items-center gap-1 text-xs font-bold text-[#1E3A5F] hover:underline"
-        >
-          <ChevronLeft className="w-4 h-4" /> Volver a Explorar
-        </Link>
+        {/* Back Link + acciones del dueño */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/explorar"
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#1E3A5F] hover:underline"
+          >
+            <ChevronLeft className="w-4 h-4" /> Volver a Explorar
+          </Link>
+
+          {user?.id === listing.user_id && (
+            <Link href={`/dashboard/editar-publicacion?id=${listing.id}`}>
+              <Button variant="secondary" size="sm" leftIcon={<Pencil className="w-3.5 h-3.5" />}>
+                Editar mi publicación
+              </Button>
+            </Link>
+          )}
+        </div>
 
         {/* Main Card */}
         <div className="bg-white rounded-3xl border border-gray-100 shadow-md overflow-hidden grid grid-cols-1 md:grid-cols-12 gap-0">
