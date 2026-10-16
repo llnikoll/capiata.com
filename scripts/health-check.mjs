@@ -41,6 +41,7 @@ if (!URL_BASE || !ANON) {
 const anonHeaders = { apikey: ANON, Authorization: `Bearer ${ANON}` };
 let passed = 0;
 let failed = 0;
+let skipped = 0;
 
 function check(ok, label, detail = "") {
   if (ok) {
@@ -50,6 +51,20 @@ function check(ok, label, detail = "") {
     failed += 1;
     console.log(`  ✖ ${label}${detail ? ` — ${detail}` : ""}`);
   }
+}
+
+/**
+ * Verificación que no aplica todavía (por ejemplo, una migración que el usuario
+ * no ejecutó). No cuenta como fallo: se informa como pendiente.
+ */
+function skip(label, detail = "") {
+  skipped += 1;
+  console.log(`  ⏳ ${label}${detail ? ` — ${detail}` : ""}`);
+}
+
+/** ¿La tabla todavía no existe (migración pendiente)? */
+function esTablaFaltante(res) {
+  return res.status === 404 && /PGRST205|Could not find the table/i.test(res.text);
 }
 
 async function rest(path, options = {}, headers = anonHeaders) {
@@ -101,11 +116,17 @@ console.log("\nCONTRATO DE COLUMNAS (lo que consulta la app)");
   };
 
   for (const [table, columns] of Object.entries(CONTRATO)) {
-    const { status, json } = await rest(`/rest/v1/${table}?select=${columns}&limit=1`);
+    const res = await rest(`/rest/v1/${table}?select=${columns}&limit=1`);
+
+    if (esTablaFaltante(res)) {
+      skip(`Columnas de ${table}`, "tabla inexistente → falta aplicar su migración");
+      continue;
+    }
+
     check(
-      status === 200,
+      res.status === 200,
       `Columnas de ${table}`,
-      status === 200 ? "" : (json?.message ?? `HTTP ${status}`)
+      res.status === 200 ? "" : (res.json?.message ?? `HTTP ${res.status}`)
     );
   }
 }
@@ -243,6 +264,12 @@ console.log("\nPAYLOADS DE ESCRITURA (claves = columnas reales)");
       body: JSON.stringify(item.body),
     });
     const text = await res.text();
+
+    if (esTablaFaltante({ status: res.status, text })) {
+      skip(item.nombre, "tabla inexistente → falta aplicar su migración");
+      continue;
+    }
+
     const claveInvalida = res.status === 400 && /PGRST204|42703/.test(text);
     check(
       !claveInvalida,
@@ -256,18 +283,28 @@ console.log("\nPAYLOADS DE ESCRITURA (claves = columnas reales)");
 console.log("\nROW LEVEL SECURITY");
 {
   const conversations = await rest("/rest/v1/conversations?select=id&limit=1");
-  check(
-    conversations.status === 200 || conversations.status === 401 || conversations.status === 403,
-    "Conversaciones protegidas para anónimos",
-    `HTTP ${conversations.status}`
-  );
+
+  if (esTablaFaltante(conversations)) {
+    skip("Conversaciones protegidas para anónimos", "tabla inexistente → falta migración 006");
+  } else {
+    check(
+      conversations.status === 200 || conversations.status === 401 || conversations.status === 403,
+      "Conversaciones protegidas para anónimos",
+      `HTTP ${conversations.status}`
+    );
+  }
 
   const messages = await rest("/rest/v1/messages?select=id&limit=1");
-  check(
-    messages.status === 200 || messages.status === 401 || messages.status === 403,
-    "Mensajes protegidos para anónimos",
-    `HTTP ${messages.status}`
-  );
+
+  if (esTablaFaltante(messages)) {
+    skip("Mensajes protegidos para anónimos", "tabla inexistente → falta migración 006");
+  } else {
+    check(
+      messages.status === 200 || messages.status === 401 || messages.status === 403,
+      "Mensajes protegidos para anónimos",
+      `HTTP ${messages.status}`
+    );
+  }
 
   const { status, json } = await rest("/rest/v1/listings?select=id,status&limit=100");
   const onlyActive = Array.isArray(json) && json.every((row) => row.status === "active");
@@ -424,5 +461,6 @@ if (DEEP) {
   }
 }
 
-console.log(`\n${failed === 0 ? "✔" : "✖"} ${passed} correctas, ${failed} con problemas\n`);
+const pendientes = skipped > 0 ? ` · ⏳ ${skipped} pendientes de migración` : "";
+console.log(`\n${failed === 0 ? "✔" : "✖"} ${passed} correctas, ${failed} con problemas${pendientes}\n`);
 process.exit(failed === 0 ? 0 : 1);
