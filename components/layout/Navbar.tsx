@@ -14,6 +14,7 @@ import {
   Briefcase,
   HelpCircle,
   LogOut,
+  Building,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
@@ -56,8 +57,8 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-[#1E3A5F] flex items-center justify-center text-[#F5B800] font-black text-xl shadow-md group-hover:scale-105 transition-transform">
-              C
+            <div className="w-10 h-10 rounded-xl bg-[#1E3A5F] flex items-center justify-center text-[#F5B800] shadow-md group-hover:scale-105 transition-transform">
+              <Building className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
               <span className="font-black text-lg tracking-tight text-[#1E3A5F] leading-none">

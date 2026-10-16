@@ -96,6 +96,8 @@ console.log("\nCONTRATO DE COLUMNAS (lo que consulta la app)");
     listing_images: "id,listing_id,image_url,position",
     favorites: "id,user_id,listing_id,created_at",
     reports: "id,reporter_id,listing_id,reason,description,status,created_at",
+    conversations: "id,listing_id,participant_a,participant_b,last_message_at,created_at",
+    messages: "id,conversation_id,sender_id,content,is_read,created_at",
   };
 
   for (const [table, columns] of Object.entries(CONTRATO)) {
@@ -211,6 +213,27 @@ console.log("\nPAYLOADS DE ESCRITURA (claves = columnas reales)");
       query: "",
       body: { reporter_id: DUMMY, listing_id: DUMMY, reason: "other", description: null },
     },
+    {
+      nombre: "conversations · alta",
+      tabla: "conversations",
+      metodo: "POST",
+      query: "",
+      body: { listing_id: null, participant_a: DUMMY, participant_b: DUMMY },
+    },
+    {
+      nombre: "messages · alta",
+      tabla: "messages",
+      metodo: "POST",
+      query: "",
+      body: { conversation_id: DUMMY, sender_id: DUMMY, content: "health-check" },
+    },
+    {
+      nombre: "messages · marcar leído",
+      tabla: "messages",
+      metodo: "PATCH",
+      query: `?id=eq.${DUMMY}`,
+      body: { is_read: true },
+    },
   ];
 
   for (const item of payloads) {
@@ -232,6 +255,20 @@ console.log("\nPAYLOADS DE ESCRITURA (claves = columnas reales)");
 /* ------------------------------------------------------------------- RLS */
 console.log("\nROW LEVEL SECURITY");
 {
+  const conversations = await rest("/rest/v1/conversations?select=id&limit=1");
+  check(
+    conversations.status === 200 || conversations.status === 401 || conversations.status === 403,
+    "Conversaciones protegidas para anónimos",
+    `HTTP ${conversations.status}`
+  );
+
+  const messages = await rest("/rest/v1/messages?select=id&limit=1");
+  check(
+    messages.status === 200 || messages.status === 401 || messages.status === 403,
+    "Mensajes protegidos para anónimos",
+    `HTTP ${messages.status}`
+  );
+
   const { status, json } = await rest("/rest/v1/listings?select=id,status&limit=100");
   const onlyActive = Array.isArray(json) && json.every((row) => row.status === "active");
   check(status === 200 && onlyActive, "Anónimo sólo ve publicaciones activas");

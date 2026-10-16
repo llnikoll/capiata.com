@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Alert } from "@/components/ui/Alert";
 import { ReportModal } from "@/components/listings/ReportModal";
+import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
 import { ListingCard } from "@/components/listings/ListingCard";
 import {
   formatPrice,
@@ -349,6 +350,12 @@ export function ListingDetailView({ listing, related }: ListingDetailViewProps) 
                   </Button>
                 </a>
               )}
+
+              <ContactSellerButton
+                listingId={listing.id}
+                listingSlug={listing.slug}
+                ownerId={listing.user_id}
+              />
 
               <div className="flex items-center justify-between text-xs text-gray-400 pt-2">
                 <div className="flex items-center gap-1">

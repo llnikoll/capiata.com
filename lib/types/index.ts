@@ -142,6 +142,37 @@ export interface FavoriteWithListing extends Favorite {
   listing: Listing | null;
 }
 
+/* --------------------------------------------------------------- */
+/* Mensajería interna                                              */
+/* --------------------------------------------------------------- */
+
+export interface Conversation {
+  id: string;
+  listing_id: string | null;
+  participant_a: string;
+  participant_b: string;
+  last_message_at: string;
+  created_at: string;
+  listing?: Pick<Listing, "id" | "title" | "slug" | "type" | "images"> | null;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+/** Conversación lista para mostrar: con la otra persona, último mensaje y no leídos. */
+export interface ConversationSummary {
+  conversation: Conversation;
+  otherParticipant: Pick<Profile, "id" | "username" | "full_name" | "avatar_url"> | null;
+  lastMessage: Message | null;
+  unreadCount: number;
+}
+
 export interface AdminStats {
   users: number;
   listings: number;

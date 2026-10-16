@@ -13,6 +13,7 @@ import {
   PlusCircle,
   LogOut,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -47,6 +48,11 @@ const sidebarLinks = [
     name: "Mis Favoritos",
     href: "/dashboard/favoritos",
     icon: Heart,
+  },
+  {
+    name: "Mensajes",
+    href: "/dashboard/mensajes",
+    icon: MessageSquare,
   },
   {
     name: "Mi Perfil / Comercio",
