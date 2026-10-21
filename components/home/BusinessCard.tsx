@@ -1,7 +1,8 @@
 import React from "react";
+import Link from "next/link";
 import { Business } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
-import { MapPin, Phone, CheckCircle2, Clock } from "lucide-react";
+import { MapPin, Phone, CheckCircle2, Clock, Store } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/utils";
 
 export const BusinessCard: React.FC<{ business: Business }> = ({ business }) => {
@@ -19,7 +20,13 @@ export const BusinessCard: React.FC<{ business: Business }> = ({ business }) => 
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <h4 className="font-bold text-gray-900 text-base truncate">
-              {business.business_name}
+              {business.profile?.username ? (
+                <Link href={`/tienda/${business.profile.username}`} className="hover:underline">
+                  {business.business_name}
+                </Link>
+              ) : (
+                business.business_name
+              )}
             </h4>
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
           </div>
@@ -51,9 +58,18 @@ export const BusinessCard: React.FC<{ business: Business }> = ({ business }) => 
       )}
 
       <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-        <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
-          Comercio de Capiatá
-        </span>
+        {business.profile?.username ? (
+          <Link
+            href={`/tienda/${business.profile.username}`}
+            className="inline-flex items-center gap-1 text-[11px] text-[#1E3A5F] font-bold hover:underline"
+          >
+            <Store className="w-3.5 h-3.5" /> Ver tienda
+          </Link>
+        ) : (
+          <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
+            Comercio de Capiatá
+          </span>
+        )}
 
         {whatsappUrl && (
           <a

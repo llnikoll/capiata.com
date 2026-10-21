@@ -98,6 +98,9 @@ export const businessFormSchema = z.object({
   whatsapp: optionalPhoneSchema,
   address: z.string().trim().max(160, "La dirección es demasiado larga"),
   schedule: z.string().trim().max(120, "El horario es demasiado largo"),
+  instagram: z.string().trim().max(200, "El enlace de Instagram es demasiado largo"),
+  facebook: z.string().trim().max(200, "El enlace de Facebook es demasiado largo"),
+  website: z.string().trim().max(200, "El sitio web es demasiado largo"),
 });
 
 export type BusinessFormValues = z.infer<typeof businessFormSchema>;

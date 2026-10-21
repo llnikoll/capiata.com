@@ -3,6 +3,7 @@ import { SupabaseQueryError } from "./errors";
 import type {
   AdminStats,
   Business,
+  BusinessImage,
   BusinessUpdateInput,
   Category,
   FavoriteWithListing,
@@ -85,6 +86,10 @@ function sortImages(listing: Listing): Listing {
     listing.images = [...listing.images].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   }
   return listing;
+}
+
+function sortBusinessImages(images: BusinessImage[]): BusinessImage[] {
+  return [...images].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 }
 
 /* ------------------------------------------------------------------ */
@@ -459,9 +464,10 @@ export async function getBusinesses(
   supabase: SupabaseClient,
   options?: { limit?: number }
 ): Promise<Business[]> {
+  // El username permite que cada tarjeta del directorio enlace a su tienda.
   const { data, error } = await supabase
     .from("businesses")
-    .select(BUSINESS_COLUMNS)
+    .select(`${BUSINESS_COLUMNS}, profile:profiles(username)`)
     .order("created_at", { ascending: false })
     .limit(options?.limit ?? 60);
 
@@ -518,6 +524,70 @@ export async function saveBusiness(
 }
 
 /* ------------------------------------------------------------------ */
+/* Galería de la tienda                                                */
+/* ------------------------------------------------------------------ */
+
+export async function getBusinessImages(
+  supabase: SupabaseClient,
+  businessId: string
+): Promise<BusinessImage[]> {
+  const { data, error } = await supabase
+    .from("business_images")
+    .select("id, business_id, image_url, position, created_at")
+    .eq("business_id", businessId);
+
+  if (error) fail("No pudimos cargar las fotos de la tienda.", error);
+
+  return sortBusinessImages((data ?? []) as unknown as BusinessImage[]);
+}
+
+export async function insertBusinessImages(
+  supabase: SupabaseClient,
+  rows: Array<{ businessId: string; url: string; position: number }>
+): Promise<BusinessImage[]> {
+  if (rows.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("business_images")
+    .insert(
+      rows.map((row) => ({
+        business_id: row.businessId,
+        image_url: row.url,
+        position: row.position,
+      }))
+    )
+    .select("id, business_id, image_url, position, created_at");
+
+  if (error) fail("No pudimos guardar las fotos de la tienda.", error);
+
+  return (data ?? []) as unknown as BusinessImage[];
+}
+
+export async function deleteBusinessImages(
+  supabase: SupabaseClient,
+  imageIds: string[]
+): Promise<void> {
+  if (imageIds.length === 0) return;
+
+  const { error } = await supabase.from("business_images").delete().in("id", imageIds);
+  if (error) fail("No pudimos quitar las fotos seleccionadas.", error);
+}
+
+export async function updateBusinessImagePositions(
+  supabase: SupabaseClient,
+  updates: Array<{ id: string; position: number }>
+): Promise<void> {
+  for (const update of updates) {
+    const { error } = await supabase
+      .from("business_images")
+      .update({ position: update.position })
+      .eq("id", update.id);
+
+    if (error) fail("No pudimos reordenar las fotos de la tienda.", error);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Perfiles                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -569,6 +639,35 @@ export async function getActiveListingsByUser(
   if (error) fail("No pudimos cargar las publicaciones del perfil.", error);
 
   return ((data ?? []) as unknown as Listing[]).map(sortImages);
+}
+
+/** Cupo de fotos de la vitrina del usuario (10 por defecto en la base). */
+export async function getProfilePhotoLimit(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("photo_limit")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) fail("No pudimos cargar tu cupo de fotos.", error);
+
+  return data?.photo_limit ?? 10;
+}
+
+/** Marca la cuenta como comercio al abrir su tienda. */
+export async function setUserAsBusiness(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ user_type: "business" })
+    .eq("id", userId);
+
+  if (error) fail("No pudimos marcar tu cuenta como comercio.", error);
 }
 
 export async function updateProfile(
@@ -719,7 +818,7 @@ export async function getAdminProfiles(
 ): Promise<Profile[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select(`${PROFILE_COLUMNS}, is_admin`)
+    .select(`${PROFILE_COLUMNS}, is_admin, photo_limit`)
     .order("created_at", { ascending: false })
     .limit(options?.limit ?? 100);
 
@@ -731,10 +830,44 @@ export async function getAdminProfiles(
 export async function updateProfileModeration(
   supabase: SupabaseClient,
   profileId: string,
-  patch: { is_verified?: boolean; is_blocked?: boolean }
+  patch: { is_verified?: boolean; is_blocked?: boolean; photo_limit?: number }
 ): Promise<void> {
   const { error } = await supabase.from("profiles").update(patch).eq("id", profileId);
   if (error) fail("No pudimos actualizar el estado del usuario.", error);
+}
+
+/** Cuántas fotos de vitrina usó cada cuenta (panel admin). */
+export async function getBusinessPhotoUsage(
+  supabase: SupabaseClient
+): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from("business_images")
+    .select("business_id, business:businesses(user_id)");
+
+  if (error) fail("No pudimos contar las fotos de las tiendas.", error);
+
+  const usage: Record<string, number> = {};
+  for (const row of (data ?? []) as unknown as Array<{
+    business: { user_id: string } | null;
+  }>) {
+    const userId = row.business?.user_id;
+    if (userId) usage[userId] = (usage[userId] ?? 0) + 1;
+  }
+
+  return usage;
+}
+
+/** Usuarios con tienda, para el sitemap. */
+export async function getStoreUsernames(supabase: SupabaseClient): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("profile:profiles(username)");
+
+  if (error) fail("No pudimos cargar las tiendas.", error);
+
+  return ((data ?? []) as unknown as Array<{ profile: { username: string } | null }>)
+    .map((row) => row.profile?.username)
+    .filter((username): username is string => Boolean(username));
 }
 
 export async function getAdminReports(supabase: SupabaseClient): Promise<ReportWithRelations[]> {

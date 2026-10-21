@@ -90,7 +90,7 @@ console.log("ESQUEMA Y SEED");
   const { status, json } = await rest("/rest/v1/categories?select=slug&limit=100");
   check(status === 200 && Array.isArray(json) && json.length >= 14, "14 categorías sembradas", `${json?.length ?? 0} filas`);
 }
-for (const table of ["listings", "listing_images", "profiles", "businesses", "favorites", "reports"]) {
+for (const table of ["listings", "listing_images", "profiles", "businesses", "business_images", "favorites", "reports"]) {
   const { status } = await rest(`/rest/v1/${table}?select=id&limit=1`);
   check(status === 200, `Tabla public.${table} responde`, `HTTP ${status}`);
 }
@@ -102,13 +102,14 @@ console.log("\nCONTRATO DE COLUMNAS (lo que consulta la app)");
 {
   const CONTRATO = {
     profiles:
-      "id,username,full_name,avatar_url,phone,bio,city,neighborhood,user_type,is_verified,is_blocked,created_at",
+      "id,username,full_name,avatar_url,phone,bio,city,neighborhood,user_type,is_verified,is_blocked,photo_limit,created_at",
     businesses:
       "id,user_id,business_name,logo_url,description,category,phone,whatsapp,address,schedule,social_links,created_at",
     categories: "id,name,slug,icon,color,description,is_active,listing_count",
     listings:
       "id,user_id,business_id,type,category_id,title,slug,description,price,currency,location,neighborhood,contact_whatsapp,contact_phone,contact_method,status,views_count,created_at,updated_at",
     listing_images: "id,listing_id,image_url,position",
+    business_images: "id,business_id,image_url,position,created_at",
     favorites: "id,user_id,listing_id,created_at",
     reports: "id,reporter_id,listing_id,reason,description,status,created_at",
     conversations: "id,listing_id,participant_a,participant_b,last_message_at,created_at",
@@ -127,6 +128,43 @@ console.log("\nCONTRATO DE COLUMNAS (lo que consulta la app)");
       res.status === 200,
       `Columnas de ${table}`,
       res.status === 200 ? "" : (res.json?.message ?? `HTTP ${res.status}`)
+    );
+  }
+}
+
+/* ------------------------------------------------------ tienda / vitrina */
+console.log("\nTIENDA / VITRINA");
+{
+  const res = await rest("/rest/v1/businesses?select=user_id&limit=1000");
+
+  if (esTablaFaltante(res)) {
+    skip("Una tienda por cuenta", "tabla inexistente → falta migración 007");
+  } else if (res.status === 200 && Array.isArray(res.json)) {
+    const counts = new Map();
+    for (const row of res.json) counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1);
+    const duplicates = [...counts.values()].filter((count) => count > 1).length;
+    check(duplicates === 0, "Una tienda por cuenta", `${duplicates} usuario(s) duplicado(s)`);
+  } else {
+    check(false, "Una tienda por cuenta", `HTTP ${res.status}`);
+  }
+
+  const insert = await rest("/rest/v1/business_images", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({
+      business_id: "00000000-0000-0000-0000-000000000000",
+      image_url: "https://example.com/health-check.jpg",
+      position: 0,
+    }),
+  });
+
+  if (esTablaFaltante(insert)) {
+    skip("Anónimo NO puede subir fotos de tienda", "tabla inexistente → falta migración 007");
+  } else {
+    check(
+      insert.status === 401 || insert.status === 403,
+      "Anónimo NO puede subir fotos de tienda",
+      `HTTP ${insert.status}`
     );
   }
 }

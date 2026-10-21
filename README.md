@@ -34,7 +34,7 @@ En el **SQL Editor** del proyecto, ejecutar en este orden:
 
 1. `supabase/setup_all.sql` — esquema completo, RLS, 14 categorías y endurecimiento de
    producción (buckets de Storage, Realtime, rol admin). Es idempotente.
-   Alternativa por partes: `supabase/migrations/001_initial_schema.sql` → `002` → `003` → `004_production_hardening.sql`.
+   Alternativa por partes: `supabase/migrations/001_initial_schema.sql` → `002` → `003` → `004_production_hardening.sql` → `005` → `006` → `007_storefront.sql`.
 
 2. Habilitar tu cuenta como administradora:
 
@@ -99,9 +99,26 @@ proxy.ts                  Refresco de sesión + protección de rutas privadas
 | `categories` | pública | administración |
 | `listings` | pública si `status = 'active'` | sólo el autor (y admins) |
 | `listing_images` | pública | sólo el autor de la publicación |
+| `business_images` | pública | sólo el dueño de la tienda (cupo en `profiles.photo_limit`) |
 | `favorites` | propia (y del dueño de la publicación) | propia |
 | `reports` | propia (y admins) | alta autenticada; moderación sólo admins |
 | `storage.objects` | pública en los buckets de la app | archivos dentro de `{user_id}/…` |
 
 El feed es de **acceso universal**: cualquier visitante, con o sin cuenta, ve las
 publicaciones en tiempo real. Sólo la creación de contenido y el panel requieren sesión.
+
+### Tienda online (escaparate)
+
+Cada cuenta puede abrir su tienda desde `/dashboard/mi-tienda`. La tienda pública vive
+en `/tienda/[username]` y reúne datos del negocio, redes, galería de fotos y las
+publicaciones activas del usuario.
+
+- **Cupo de fotos**: `profiles.photo_limit` (10 por defecto). El trigger
+  `business_images_enforce_limit` rechaza en la base cualquier foto que exceda el cupo.
+- **Ampliar el cupo**: desde `/admin/usuarios`, cambiando el número junto a “fotos”.
+  Bajar el cupo no borra fotos existentes; sólo impide agregar nuevas.
+- **Una tienda por cuenta**: índice único `businesses_user_id_key`.
+- **Almacenamiento**: las fotos de la tienda reutilizan el bucket `listings-images`
+  dentro de la carpeta del usuario, con las mismas políticas de Storage.
+- **Protección de privilegios**: el trigger `profiles_protect_privileges` impide que un
+  usuario común modifique por API `is_admin`, `is_verified`, `is_blocked` o `photo_limit`.

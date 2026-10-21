@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { getCategories, getListings } from "@/lib/supabase/queries";
+import { getCategories, getListings, getStoreUsernames } from "@/lib/supabase/queries";
 import { NEIGHBORHOODS } from "@/lib/neighborhoods";
 
 /**
@@ -60,9 +60,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const supabase = createPublicClient();
-    const [categories, listings] = await Promise.all([
+    const [categories, listings, storeUsernames] = await Promise.all([
       getCategories(supabase),
       getListings(supabase, { limit: 500, sort: "newest" }),
+      getStoreUsernames(supabase),
     ]);
 
     const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
@@ -79,7 +80,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     }));
 
-    return [...staticRoutes, ...categoryRoutes, ...barrioRoutes, ...listingRoutes];
+    const storeRoutes: MetadataRoute.Sitemap = storeUsernames.map((username) => ({
+      url: `${baseUrl}/tienda/${username}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    }));
+
+    return [
+      ...staticRoutes,
+      ...categoryRoutes,
+      ...barrioRoutes,
+      ...listingRoutes,
+      ...storeRoutes,
+    ];
   } catch {
     return [...staticRoutes, ...barrioRoutes];
   }

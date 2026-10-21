@@ -14,6 +14,7 @@ import {
   LogOut,
   ChevronRight,
   MessageSquare,
+  Store,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -55,7 +56,12 @@ const sidebarLinks = [
     icon: MessageSquare,
   },
   {
-    name: "Mi Perfil / Comercio",
+    name: "Mi Tienda Online",
+    href: "/dashboard/mi-tienda",
+    icon: Store,
+  },
+  {
+    name: "Mi Perfil",
     href: "/dashboard/mi-cuenta",
     icon: User,
   },

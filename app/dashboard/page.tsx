@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   MapPin,
   RefreshCw,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
@@ -94,6 +95,17 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      <Link
+        href="/dashboard/mi-tienda"
+        className="flex items-center justify-between gap-3 bg-[#1E3A5F] text-white p-4 rounded-2xl hover:bg-[#162C48] transition-colors"
+      >
+        <span className="flex items-center gap-2 text-sm font-bold">
+          <Store className="w-4 h-4 text-[#F5B800]" />
+          Creá o administrá tu tienda online con fotos y enlace propio
+        </span>
+        <ArrowUpRight className="w-4 h-4 text-white/70 shrink-0" />
+      </Link>
 
       {error && (
         <Alert variant="error" onRetry={loadData}>

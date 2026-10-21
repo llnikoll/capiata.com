@@ -1,17 +1,23 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Ban, ShieldCheck, MapPin, Users, RefreshCw } from "lucide-react";
+import { CheckCircle2, Ban, ShieldCheck, MapPin, Users, RefreshCw, Images } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { createClient } from "@/lib/supabase/client";
-import { getAdminProfiles, updateProfileModeration } from "@/lib/supabase/queries";
+import {
+  getAdminProfiles,
+  getBusinessPhotoUsage,
+  updateProfileModeration,
+} from "@/lib/supabase/queries";
 import { toErrorMessage } from "@/lib/supabase/errors";
 import type { Profile } from "@/lib/types";
 
 export default function AdminUsuariosPage() {
   const [users, setUsers] = useState<Profile[]>([]);
+  const [photoUsage, setPhotoUsage] = useState<Record<string, number>>({});
+  const [limitDraft, setLimitDraft] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -20,8 +26,15 @@ export default function AdminUsuariosPage() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const data = await getAdminProfiles(supabase);
+      const [data, usage] = await Promise.all([
+        getAdminProfiles(supabase),
+        getBusinessPhotoUsage(supabase),
+      ]);
       setUsers(data);
+      setPhotoUsage(usage);
+      setLimitDraft(
+        Object.fromEntries(data.map((profile) => [profile.id, String(profile.photo_limit ?? 10)]))
+      );
       setError(null);
     } catch (loadError) {
       setError(toErrorMessage(loadError, "No pudimos cargar los usuarios."));
@@ -36,7 +49,7 @@ export default function AdminUsuariosPage() {
 
   const patchUser = async (
     profile: Profile,
-    patch: { is_verified?: boolean; is_blocked?: boolean }
+    patch: { is_verified?: boolean; is_blocked?: boolean; photo_limit?: number }
   ) => {
     setPendingId(profile.id);
     setUsers((current) =>
@@ -53,6 +66,23 @@ export default function AdminUsuariosPage() {
     } finally {
       setPendingId(null);
     }
+  };
+
+  const savePhotoLimit = async (profile: Profile) => {
+    const raw = limitDraft[profile.id] ?? "";
+    const limit = Number(raw);
+
+    if (!Number.isInteger(limit) || limit < 0 || limit > 1000) {
+      setLimitDraft((current) => ({
+        ...current,
+        [profile.id]: String(profile.photo_limit ?? 10),
+      }));
+      return;
+    }
+
+    if (limit === (profile.photo_limit ?? 10)) return;
+
+    await patchUser(profile, { photo_limit: limit });
   };
 
   return (
@@ -140,7 +170,37 @@ export default function AdminUsuariosPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <label
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-gray-800 border border-gray-700"
+                  title="Cupo de fotos de la vitrina. Cambiá el número y salí del campo para guardar."
+                >
+                  <Images className="w-3.5 h-3.5 text-purple-300" />
+                  <span className="text-[11px] text-gray-400">
+                    {photoUsage[profile.id] ?? 0}/
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={1000}
+                    value={limitDraft[profile.id] ?? ""}
+                    onChange={(e) =>
+                      setLimitDraft((current) => ({
+                        ...current,
+                        [profile.id]: e.target.value,
+                      }))
+                    }
+                    onBlur={() => void savePhotoLimit(profile)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                    disabled={pendingId === profile.id}
+                    aria-label={`Cupo de fotos de ${profile.full_name || profile.username}`}
+                    className="w-14 bg-gray-900 border border-gray-600 rounded-md px-1.5 py-0.5 text-xs text-white text-center focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="text-[11px] text-gray-400">fotos</span>
+                </label>
+
                 <Button
                   variant={profile.is_verified ? "outline" : "accent"}
                   size="sm"

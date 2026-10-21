@@ -24,6 +24,8 @@ export interface Profile {
   is_blocked: boolean;
   /** Sólo presente cuando la consulta pide explícitamente la columna (panel admin). */
   is_admin?: boolean;
+  /** Cupo de fotos de la vitrina. Sólo se pide en el panel y en el editor de tienda. */
+  photo_limit?: number;
   created_at: string;
 }
 
@@ -36,6 +38,14 @@ export interface ProfileUpdateInput {
   city: string;
   user_type: UserType;
   avatar_url?: string | null;
+}
+
+export interface BusinessImage {
+  id: string;
+  business_id: string;
+  image_url: string;
+  position: number;
+  created_at: string;
 }
 
 export interface Business {
@@ -55,6 +65,10 @@ export interface Business {
     website?: string;
   } | null;
   created_at: string;
+  /** Sólo lo pide el directorio, para enlazar a /tienda/[username]. */
+  profile?: Pick<Profile, "username"> | null;
+  /** Sólo lo piden la tienda pública y el editor. */
+  images?: BusinessImage[];
 }
 
 /** Datos editables del perfil de comercio/emprendimiento. */
@@ -66,6 +80,7 @@ export interface BusinessUpdateInput {
   whatsapp: string | null;
   address: string | null;
   schedule: string | null;
+  social_links?: Business["social_links"];
   logo_url?: string | null;
 }
 

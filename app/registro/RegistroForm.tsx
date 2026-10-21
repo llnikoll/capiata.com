@@ -106,8 +106,13 @@ export function RegistroForm() {
       }
 
       if (data.session) {
-        setSuccessMessage("¡Cuenta creada con éxito! Te estamos llevando a tu panel.");
-        router.push("/dashboard");
+        const next = userType === "business" ? "/dashboard/mi-tienda" : "/dashboard";
+        setSuccessMessage(
+          userType === "business"
+            ? "¡Cuenta creada! Ahora creá tu tienda online."
+            : "¡Cuenta creada con éxito! Te estamos llevando a tu panel."
+        );
+        router.push(next);
         router.refresh();
         return;
       }

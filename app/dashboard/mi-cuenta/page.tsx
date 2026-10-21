@@ -8,11 +8,11 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Alert } from "@/components/ui/Alert";
-import { CAPIATA_NEIGHBORHOODS, DEFAULT_CATEGORIES } from "@/lib/types";
-import { Save, CheckCircle2, Store, Upload, ExternalLink } from "lucide-react";
-import { businessFormSchema, profileFormSchema, validateForm, type FieldErrors } from "@/lib/validation";
+import { CAPIATA_NEIGHBORHOODS, type UserType } from "@/lib/types";
+import { Save, CheckCircle2, ExternalLink, Store, Upload } from "lucide-react";
+import { profileFormSchema, validateForm, type FieldErrors } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/client";
-import { getBusinessByUser, getProfile, saveBusiness, updateProfile } from "@/lib/supabase/queries";
+import { getProfile, updateProfile } from "@/lib/supabase/queries";
 import {
   AVATARS_BUCKET,
   deleteImageByPublicUrl,
@@ -20,7 +20,6 @@ import {
   validateImageFile,
 } from "@/lib/supabase/storage";
 import { toErrorMessage } from "@/lib/supabase/errors";
-import { normalizeWhatsAppNumber } from "@/lib/utils";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 export default function MiCuentaPage() {
@@ -33,9 +32,7 @@ export default function MiCuentaPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [avatarError, setAvatarError] = useState<string | null>(null);
-  const [logoError, setLogoError] = useState<string | null>(null);
 
-  // Perfil personal
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [neighborhood, setNeighborhood] = useState<string>(CAPIATA_NEIGHBORHOODS[0]);
@@ -43,24 +40,9 @@ export default function MiCuentaPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-
-  // Perfil de comercio
-  const [isBusiness, setIsBusiness] = useState(false);
-  const [businessId, setBusinessId] = useState<string | null>(null);
-  const [businessName, setBusinessName] = useState("");
-  const [businessDescription, setBusinessDescription] = useState("");
-  const [businessCategory, setBusinessCategory] = useState("");
-  const [businessAddress, setBusinessAddress] = useState("");
-  const [businessSchedule, setBusinessSchedule] = useState("");
-  const [businessPhone, setBusinessPhone] = useState("");
-  const [businessWhatsapp, setBusinessWhatsapp] = useState("");
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-
+  const [userType, setUserType] = useState<UserType>("person");
   const [username, setUsername] = useState<string | null>(null);
 
-  // Carga de datos reales del usuario autenticado.
   useEffect(() => {
     if (!user) {
       setLoading(authLoading);
@@ -75,10 +57,7 @@ export default function MiCuentaPage() {
 
       try {
         const supabase = createClient();
-        const [profile, business] = await Promise.all([
-          getProfile(supabase, user.id),
-          getBusinessByUser(supabase, user.id),
-        ]);
+        const profile = await getProfile(supabase, user.id);
 
         if (!active) return;
 
@@ -88,28 +67,12 @@ export default function MiCuentaPage() {
           setBio(profile.bio ?? "");
           setAvatarUrl(profile.avatar_url);
           setUsername(profile.username);
+          setUserType(profile.user_type);
           if (profile.neighborhood) setNeighborhood(profile.neighborhood);
-          setIsBusiness(profile.user_type === "business");
         } else {
           setLoadError(
             "No encontramos tu perfil en la base. Cerrá sesión y volvé a entrar para regenerarlo."
           );
-        }
-
-        if (business) {
-          setBusinessId(business.id);
-          setBusinessName(business.business_name);
-          setBusinessDescription(business.description ?? "");
-          setBusinessCategory(business.category ?? "");
-          setBusinessAddress(business.address ?? "");
-          setBusinessSchedule(business.schedule ?? "");
-          setBusinessPhone(business.phone ?? "");
-          setBusinessWhatsapp(business.whatsapp ?? "");
-          setLogoUrl(business.logo_url);
-        } else {
-          setBusinessName(profile?.full_name ?? "");
-          setBusinessPhone(profile?.phone ?? "");
-          setBusinessWhatsapp(profile?.phone ? normalizeWhatsAppNumber(profile.phone) : "");
         }
       } catch (error) {
         if (active) {
@@ -125,7 +88,6 @@ export default function MiCuentaPage() {
     };
   }, [user, authLoading]);
 
-  // Previsualización del avatar seleccionado.
   useEffect(() => {
     if (!avatarFile) {
       setAvatarPreview(null);
@@ -135,17 +97,6 @@ export default function MiCuentaPage() {
     setAvatarPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [avatarFile]);
-
-  // Previsualización del logo del comercio.
-  useEffect(() => {
-    if (!logoFile) {
-      setLogoPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(logoFile);
-    setLogoPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [logoFile]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -162,21 +113,6 @@ export default function MiCuentaPage() {
     setAvatarFile(file);
   };
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
-    const error = validateImageFile(file);
-    if (error) {
-      setLogoError(error);
-      return;
-    }
-
-    setLogoError(null);
-    setLogoFile(file);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveError(null);
@@ -185,33 +121,15 @@ export default function MiCuentaPage() {
 
     if (!user) return;
 
-    const profileParsed = validateForm(profileFormSchema, {
+    const parsed = validateForm(profileFormSchema, {
       fullName,
       phone,
       neighborhood,
       bio,
     });
 
-    const businessParsed = businessFormSchema.safeParse({
-      businessName,
-      description: businessDescription,
-      category: businessCategory,
-      phone: businessPhone,
-      whatsapp: businessWhatsapp,
-      address: businessAddress,
-      schedule: businessSchedule,
-    });
-
-    const errors: FieldErrors = {};
-    if (!profileParsed.success) Object.assign(errors, profileParsed.errors);
-    if (isBusiness && !businessParsed.success) {
-      for (const issue of businessParsed.error.issues) {
-        errors[`business.${issue.path.join(".")}`] = issue.message;
-      }
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
+    if (!parsed.success) {
+      setFieldErrors(parsed.errors);
       setSaveError("Revisá los campos marcados antes de guardar.");
       return;
     }
@@ -221,7 +139,6 @@ export default function MiCuentaPage() {
     try {
       const supabase = createClient();
 
-      // 1. Avatar (opcional): sube la nueva imagen y reemplaza la referencia.
       let nextAvatarUrl = avatarUrl;
       if (avatarFile) {
         const previousAvatar = avatarUrl;
@@ -233,52 +150,15 @@ export default function MiCuentaPage() {
         }
       }
 
-      // 2. Perfil personal (RLS: sólo el propio usuario puede actualizarlo).
       await updateProfile(supabase, user.id, {
         full_name: fullName.trim(),
         phone: phone.trim(),
         bio: bio.trim() || null,
         neighborhood,
         city: "Capiatá",
-        user_type: isBusiness ? "business" : "person",
+        user_type: userType,
         avatar_url: nextAvatarUrl,
       });
-
-      // 3. Perfil de comercio (RLS: sólo el dueño puede crear/editar su comercio).
-      if (isBusiness) {
-        if (businessParsed.success) {
-          let nextLogoUrl = logoUrl;
-          if (logoFile) {
-            const previousLogo = logoUrl;
-            nextLogoUrl = await uploadPublicImage(supabase, AVATARS_BUCKET, logoFile, user.id);
-            if (previousLogo) {
-              await deleteImageByPublicUrl(supabase, AVATARS_BUCKET, previousLogo).catch(
-                () => undefined
-              );
-            }
-          }
-
-          const saved = await saveBusiness(
-            supabase,
-            user.id,
-            {
-              business_name: businessParsed.data.businessName,
-              description: businessParsed.data.description || null,
-              category: businessParsed.data.category || null,
-              phone: businessParsed.data.phone || null,
-              whatsapp: normalizeWhatsAppNumber(businessParsed.data.whatsapp) || null,
-              address: businessParsed.data.address || null,
-              schedule: businessParsed.data.schedule || null,
-              logo_url: nextLogoUrl,
-            },
-            businessId
-          );
-
-          setBusinessId(saved.id);
-          setLogoUrl(saved.logo_url);
-          setLogoFile(null);
-        }
-      }
 
       setAvatarUrl(nextAvatarUrl);
       setAvatarFile(null);
@@ -302,7 +182,8 @@ export default function MiCuentaPage() {
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xs space-y-2">
         <h1 className="text-2xl font-black text-gray-900">Mi Perfil y Datos Personales</h1>
         <p className="text-xs text-gray-500">
-          Mantené actualizada tu información de contacto para que tus vecinos puedan comunicarse con vos.
+          Mantené actualizada tu información de contacto para que tus vecinos puedan comunicarse
+          con vos.
         </p>
         {username && (
           <Link
@@ -316,6 +197,17 @@ export default function MiCuentaPage() {
 
       {loadError && <Alert variant="error">{loadError}</Alert>}
 
+      <Link
+        href="/dashboard/mi-tienda"
+        className="flex items-center justify-between gap-3 bg-[#1E3A5F] text-white p-4 rounded-2xl hover:bg-[#162C48] transition-colors"
+      >
+        <span className="flex items-center gap-2 text-sm font-bold">
+          <Store className="w-4 h-4 text-[#F5B800]" />
+          {userType === "business" ? "Administrar mi tienda online" : "Crear mi tienda online"}
+        </span>
+        <ExternalLink className="w-4 h-4 text-white/70" />
+      </Link>
+
       <form
         onSubmit={handleSubmit}
         noValidate
@@ -323,7 +215,6 @@ export default function MiCuentaPage() {
       >
         {saveError && <Alert variant="error">{saveError}</Alert>}
 
-        {/* Avatar section */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-6 border-b border-gray-100">
           <Avatar src={avatarPreview || avatarUrl} name={displayName} size="xl" />
           <div className="space-y-1.5">
@@ -352,7 +243,6 @@ export default function MiCuentaPage() {
           </div>
         </div>
 
-        {/* Basic Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Nombre y Apellido"
@@ -391,114 +281,6 @@ export default function MiCuentaPage() {
           maxLength={400}
         />
 
-        {/* Business Profile Toggle */}
-        <div className="pt-6 border-t border-gray-100 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-gray-900 text-sm">
-              <Store className="w-4 h-4 text-[#1E3A5F]" /> Perfil de Comercio / Emprendimiento
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isBusiness}
-                onChange={(e) => setIsBusiness(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1E3A5F]"></div>
-            </label>
-          </div>
-
-          {isBusiness && (
-            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <Avatar
-                  src={logoPreview || logoUrl}
-                  name={businessName || displayName}
-                  size="lg"
-                />
-                <div className="space-y-1.5">
-                  <h5 className="font-bold text-gray-900 text-xs">Logo del comercio</h5>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/avif"
-                    id="logo-upload"
-                    className="hidden"
-                    onChange={handleLogoChange}
-                  />
-                  <label htmlFor="logo-upload">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-[#1E3A5F] text-[#1E3A5F] hover:bg-[#1E3A5F]/5 text-xs font-semibold cursor-pointer">
-                      <Upload className="w-3.5 h-3.5" /> Cambiar logo
-                    </span>
-                  </label>
-                  {logoError && <p className="text-xs text-red-500">{logoError}</p>}
-                </div>
-              </div>
-
-              <Input
-                label="Nombre Comercial"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                error={fieldErrors["business.businessName"]}
-              />
-
-              <Select
-                label="Rubro o categoría"
-                value={businessCategory}
-                onChange={(e) => setBusinessCategory(e.target.value)}
-                error={fieldErrors["business.category"]}
-                options={[
-                  { value: "", label: "Sin categoría" },
-                  ...DEFAULT_CATEGORIES.map((cat) => ({
-                    value: cat.name,
-                    label: cat.name,
-                  })),
-                ]}
-              />
-
-              <Textarea
-                label="Descripción del comercio"
-                rows={3}
-                value={businessDescription}
-                onChange={(e) => setBusinessDescription(e.target.value)}
-                error={fieldErrors["business.description"]}
-                maxLength={600}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Dirección del local o zona"
-                  value={businessAddress}
-                  onChange={(e) => setBusinessAddress(e.target.value)}
-                  error={fieldErrors["business.address"]}
-                />
-                <Input
-                  label="Horario de atención"
-                  value={businessSchedule}
-                  onChange={(e) => setBusinessSchedule(e.target.value)}
-                  error={fieldErrors["business.schedule"]}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Teléfono del comercio"
-                  value={businessPhone}
-                  onChange={(e) => setBusinessPhone(e.target.value)}
-                  error={fieldErrors["business.phone"]}
-                />
-                <Input
-                  label="WhatsApp del comercio"
-                  value={businessWhatsapp}
-                  onChange={(e) => setBusinessWhatsapp(e.target.value)}
-                  error={fieldErrors["business.whatsapp"]}
-                  helperText="Se guarda en formato internacional para el enlace de WhatsApp."
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Submit */}
         <div className="flex flex-wrap items-center gap-3 pt-4">
           <Button
             type="submit"

@@ -166,6 +166,12 @@ async function ProfileContent({ params }: PageProps) {
                     Instagram
                   </a>
                 )}
+                <Link
+                  href={`/tienda/${profile.username}`}
+                  className="inline-flex items-center gap-1 text-[#1E3A5F] font-bold hover:underline"
+                >
+                  <Store className="w-3.5 h-3.5" /> Visitar la tienda
+                </Link>
               </div>
             </div>
           )}

@@ -39,11 +39,20 @@ export const ListingJsonLd: React.FC<{ listing: Listing }> = ({ listing }) => {
 };
 
 export const BusinessJsonLd: React.FC<{ business: Business }> = ({ business }) => {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capiata.com";
+  const images = [
+    ...(business.images ?? []).map((image) => image.image_url),
+    ...(business.logo_url ? [business.logo_url] : []),
+  ];
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     name: business.business_name,
     description: business.description,
+    ...(business.profile?.username && {
+      url: `${baseUrl}/tienda/${business.profile.username}`,
+    }),
     address: {
       "@type": "PostalAddress",
       streetAddress: business.address || "Capiatá",
@@ -51,7 +60,7 @@ export const BusinessJsonLd: React.FC<{ business: Business }> = ({ business }) =
       addressRegion: "Central",
       addressCountry: "PY",
     },
-    ...(business.logo_url && { image: business.logo_url }),
+    ...(images.length > 0 && { image: images }),
     ...(business.phone && { telephone: business.phone }),
   };
 
