@@ -2,7 +2,8 @@ import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Phone, Store, CheckCircle2, ChevronLeft, Clock, Radio } from "lucide-react";
+import { MapPin, Store, CheckCircle2, ChevronLeft, Clock, Radio } from "lucide-react";
+import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
   getActiveListingsByUser,
@@ -125,11 +126,12 @@ async function ProfileContent({ params }: PageProps) {
             </div>
 
             {whatsappUrl && (
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition-colors">
-                  <Phone className="w-4 h-4" /> WhatsApp
-                </span>
-              </a>
+              <WhatsAppButton
+                href={whatsappUrl}
+                label="WhatsApp"
+                size="md"
+                className="shrink-0"
+              />
             )}
           </div>
 

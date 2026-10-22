@@ -143,6 +143,7 @@ export default function Home() {
                 <select
                   value={selectedNeighborhood}
                   onChange={(e) => setSelectedNeighborhood(e.target.value)}
+                  aria-label="Filtrar por barrio"
                   className="w-full h-12 pl-9 pr-3 rounded-xl bg-gray-50 border border-gray-200 text-xs sm:text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
                 >
                   <option value="">Todo Capiatá</option>
@@ -159,6 +160,7 @@ export default function Home() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
+                  aria-label="Filtrar por categoría"
                   className="w-full h-12 px-3 rounded-xl bg-gray-50 border border-gray-200 text-xs sm:text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
                 >
                   <option value="">Todas</option>
@@ -353,7 +355,7 @@ export default function Home() {
                         Presupuesto: {formatPrice(Number(listing.price))}
                       </span>
                     ) : (
-                      <span className="text-xs font-semibold text-gray-400">
+                      <span className="text-xs font-semibold text-gray-500">
                         Presupuesto a convenir
                       </span>
                     )}

@@ -1,7 +1,42 @@
 import React from "react";
 import Link from "next/link";
-import * as Icons from "lucide-react";
+import {
+  Bike,
+  Building,
+  Briefcase,
+  Car,
+  Dog,
+  Dumbbell,
+  GraduationCap,
+  Heart,
+  Home,
+  PartyPopper,
+  ShoppingBag,
+  Smartphone,
+  Tag,
+  Utensils,
+  Wrench,
+  LucideIcon,
+} from "lucide-react";
 import { Category } from "@/lib/types";
+
+/** Iconos reales usados por las categorías; evita importar todo lucide-react. */
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Wrench,
+  Home,
+  Utensils,
+  ShoppingBag,
+  Smartphone,
+  Car,
+  Heart,
+  GraduationCap,
+  Building,
+  Briefcase,
+  Dog,
+  PartyPopper,
+  Dumbbell,
+  Tag,
+};
 
 interface CategoryCardProps {
   category: Category | {
@@ -15,8 +50,7 @@ interface CategoryCardProps {
 }
 
 export const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
-  // Dynamically resolve icon component
-  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[category.icon] || Icons.Tag;
+  const IconComponent = CATEGORY_ICONS[category.icon] ?? Tag;
 
   return (
     <Link
@@ -31,16 +65,16 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
           <IconComponent className="w-6 h-6" />
         </div>
         {"listing_count" in category && category.listing_count !== undefined && (
-          <span className="text-[11px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
+          <span className="text-[11px] font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
             {category.listing_count} anuncios
           </span>
         )}
       </div>
 
       <div>
-        <h4 className="font-bold text-gray-900 text-sm group-hover:text-[#1E3A5F] transition-colors line-clamp-1">
+        <h3 className="font-bold text-gray-900 text-sm group-hover:text-[#1E3A5F] transition-colors line-clamp-1">
           {category.name}
-        </h4>
+        </h3>
         {category.description && (
           <p className="text-[11px] text-gray-500 line-clamp-2 mt-1 leading-relaxed">
             {category.description}

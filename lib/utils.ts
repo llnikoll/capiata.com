@@ -78,16 +78,9 @@ export function buildWhatsAppUrl(phone: string, message: string): string {
   return `https://wa.me/${normalizeWhatsAppNumber(phone)}?text=${encodeURIComponent(message)}`;
 }
 
-
 /** Convierte "instagram.com/x" en un enlace absoluto seguro para mostrar. */
 export function toExternalUrl(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   if (!trimmed) return null;
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-}
-
-/** Trunca texto */
-export function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength).trim() + "...";
 }

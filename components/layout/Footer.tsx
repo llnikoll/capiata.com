@@ -29,9 +29,9 @@ export const Footer = () => {
 
           {/* Columna 2: Enlaces Rápidos */}
           <div className="space-y-3">
-            <h4 className="text-sm font-bold text-[#F5B800] uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-[#F5B800] uppercase tracking-wider">
               Navegación
-            </h4>
+            </h2>
             <ul className="space-y-2 text-xs text-gray-300">
               <li>
                 <Link href="/explorar" className="hover:text-white transition-colors">
@@ -63,9 +63,9 @@ export const Footer = () => {
 
           {/* Columna 3: Categorías Populares */}
           <div className="space-y-3">
-            <h4 className="text-sm font-bold text-[#F5B800] uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-[#F5B800] uppercase tracking-wider">
               Categorías
-            </h4>
+            </h2>
             <ul className="space-y-2 text-xs text-gray-300">
               <li>
                 <Link href="/categoria/servicios-tecnicos" className="hover:text-white transition-colors">
@@ -97,9 +97,9 @@ export const Footer = () => {
 
           {/* Columna 4: Transparencia & Regla de Negocio */}
           <div className="space-y-3">
-            <h4 className="text-sm font-bold text-[#F5B800] uppercase tracking-wider flex items-center gap-1.5">
+            <h2 className="text-sm font-bold text-[#F5B800] uppercase tracking-wider flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" /> Plataforma Gratuita
-            </h4>
+            </h2>
             <div className="bg-[#152B47] p-3.5 rounded-xl border border-white/10 text-xs text-gray-300 space-y-2">
               <div className="flex items-start gap-2 text-amber-300 font-semibold">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />

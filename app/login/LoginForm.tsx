@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -6,30 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { Mail, Lock, LogIn } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toErrorMessage } from "@/lib/supabase/errors";
 
-const GoogleIcon = () => (
-  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-    <path
-      fill="currentColor"
-      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-    />
-    <path
-      fill="currentColor"
-      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-    />
-    <path
-      fill="currentColor"
-      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-    />
-    <path
-      fill="currentColor"
-      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-    />
-  </svg>
-);
+
 
 export function LoginForm() {
   const router = useRouter();
@@ -57,16 +39,16 @@ export function LoginForm() {
 
       if (error) {
         setErrorMessage(
-          error.message || "No pudimos iniciar sesión. Revisá tus datos e intentalo de nuevo."
+          error.message || "No pudimos iniciar sesiÃ³n. RevisÃ¡ tus datos e intentalo de nuevo."
         );
         return;
       }
 
-      setSuccessMessage("Sesión iniciada. Te estamos llevando a tu panel.");
+      setSuccessMessage("SesiÃ³n iniciada. Te estamos llevando a tu panel.");
       router.push(redirectTo);
       router.refresh();
     } catch (error) {
-      setErrorMessage(toErrorMessage(error, "No pudimos iniciar sesión."));
+      setErrorMessage(toErrorMessage(error, "No pudimos iniciar sesiÃ³n."));
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +59,7 @@ export function LoginForm() {
     setSuccessMessage(null);
 
     if (!email.trim()) {
-      setErrorMessage("Escribí tu correo electrónico para enviarte el enlace de recuperación.");
+      setErrorMessage("EscribÃ­ tu correo electrÃ³nico para enviarte el enlace de recuperaciÃ³n.");
       return;
     }
 
@@ -89,15 +71,15 @@ export function LoginForm() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "No pudimos enviar el correo de recuperación.");
+        setErrorMessage(error.message || "No pudimos enviar el correo de recuperaciÃ³n.");
         return;
       }
 
       setSuccessMessage(
-        "Te enviamos un correo con las instrucciones para restablecer tu contraseña."
+        "Te enviamos un correo con las instrucciones para restablecer tu contraseÃ±a."
       );
     } catch (error) {
-      setErrorMessage(toErrorMessage(error, "No pudimos enviar el correo de recuperación."));
+      setErrorMessage(toErrorMessage(error, "No pudimos enviar el correo de recuperaciÃ³n."));
     } finally {
       setIsLoading(false);
     }
@@ -117,10 +99,10 @@ export function LoginForm() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "Error al iniciar sesión con Google.");
+        setErrorMessage(error.message || "Error al iniciar sesiÃ³n con Google.");
       }
     } catch (error) {
-      setErrorMessage(toErrorMessage(error, "Error al iniciar sesión con Google."));
+      setErrorMessage(toErrorMessage(error, "Error al iniciar sesiÃ³n con Google."));
     } finally {
       setIsLoading(false);
     }
@@ -133,9 +115,9 @@ export function LoginForm() {
           <div className="w-12 h-12 rounded-2xl bg-[#1E3A5F] text-[#F5B800] font-black text-2xl flex items-center justify-center mx-auto">
             C
           </div>
-          <h1 className="text-2xl font-black text-gray-900">Ingresar a Capiatá Conecta</h1>
+          <h1 className="text-2xl font-black text-gray-900">Ingresar a CapiatÃ¡ Conecta</h1>
           <p className="text-xs text-gray-500">
-            Accedé a tu cuenta para gestionar tus publicaciones
+            AccedÃ© a tu cuenta para gestionar tus publicaciones
           </p>
         </div>
 
@@ -144,7 +126,7 @@ export function LoginForm() {
 
         <form onSubmit={handleLogin} noValidate className="space-y-4">
           <Input
-            label="Correo electrónico"
+            label="Correo electrÃ³nico"
             type="email"
             placeholder="tuemail@ejemplo.com"
             value={email}
@@ -155,9 +137,9 @@ export function LoginForm() {
           />
 
           <Input
-            label="Contraseña"
+            label="ContraseÃ±a"
             type="password"
-            placeholder="••••••••"
+            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             leftIcon={<Lock className="w-4 h-4" />}
@@ -171,7 +153,7 @@ export function LoginForm() {
               onClick={handlePasswordReset}
               className="text-xs text-[#1E3A5F] font-semibold hover:underline"
             >
-              ¿Olvidaste tu contraseña?
+              Â¿Olvidaste tu contraseÃ±a?
             </button>
           </div>
 
@@ -183,7 +165,7 @@ export function LoginForm() {
             className="w-full shadow-md"
             leftIcon={<LogIn className="w-4 h-4" />}
           >
-            Iniciar Sesión
+            Iniciar SesiÃ³n
           </Button>
         </form>
 
@@ -192,7 +174,7 @@ export function LoginForm() {
             <div className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="px-2 bg-white text-gray-500">o continuá con</span>
+            <span className="px-2 bg-white text-gray-500">o continuÃ¡ con</span>
           </div>
         </div>
 
@@ -209,7 +191,7 @@ export function LoginForm() {
         </Button>
 
         <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-100">
-          ¿No tenés cuenta aún?{" "}
+          Â¿No tenÃ©s cuenta aÃºn?{" "}
           <Link href="/registro" className="text-[#1E3A5F] font-bold hover:underline">
             Registrate gratis
           </Link>

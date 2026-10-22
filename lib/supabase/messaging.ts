@@ -248,17 +248,3 @@ export async function markConversationRead(
 
   if (error) fail("No pudimos marcar los mensajes como leídos.", error);
 }
-
-export async function getConversationById(
-  supabase: SupabaseClient,
-  conversationId: string
-): Promise<Conversation | null> {
-  const { data, error } = await supabase
-    .from("conversations")
-    .select(CONVERSATION_SELECT)
-    .eq("id", conversationId)
-    .maybeSingle();
-
-  if (error) fail("No pudimos cargar la conversación.", error);
-  return (data as unknown as Conversation) ?? null;
-}

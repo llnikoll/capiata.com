@@ -24,6 +24,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
+import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { BusinessJsonLd } from "@/components/seo/JsonLd";
 import { buildWhatsAppUrl, toExternalUrl } from "@/lib/utils";
 
@@ -171,11 +172,12 @@ async function StoreContent({ params }: PageProps) {
               </div>
 
               {whatsappUrl && (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                  <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition-colors">
-                    <Phone className="w-4 h-4" /> WhatsApp
-                  </span>
-                </a>
+                <WhatsAppButton
+                  href={whatsappUrl}
+                  label="WhatsApp"
+                  size="md"
+                  className="shrink-0"
+                />
               )}
             </div>
 

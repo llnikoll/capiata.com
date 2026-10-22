@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { ListingType } from "@/lib/types";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: "offer" | "request" | "primary" | "secondary" | "outline" | "success";
+  variant?: "offer" | "request" | "primary" | "secondary";
   type?: ListingType;
   size?: "sm" | "md";
 }
@@ -20,8 +20,6 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       request: "bg-[#1E3A5F] text-white font-bold",
       primary: "bg-blue-100 text-[#1E3A5F] font-semibold",
       secondary: "bg-gray-100 text-gray-700 font-medium",
-      outline: "border border-gray-300 text-gray-700 bg-white",
-      success: "bg-green-100 text-green-800 font-semibold",
     };
 
     const sizeStyles = {

@@ -18,10 +18,3 @@ export const NEIGHBORHOODS: NeighborhoodOption[] = CAPIATA_NEIGHBORHOODS.map((na
 export function getNeighborhoodBySlug(slug: string): NeighborhoodOption | null {
   return NEIGHBORHOODS.find((neighborhood) => neighborhood.slug === slug) ?? null;
 }
-
-export function getNeighborhoodSlug(name: string): string {
-  return (
-    NEIGHBORHOODS.find((neighborhood) => neighborhood.name === name)?.slug ??
-    slugify(name, { lower: true, strict: true })
-  );
-}

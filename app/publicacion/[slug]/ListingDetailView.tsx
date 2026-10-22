@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { Avatar } from "@/components/ui/Avatar";
 import { Alert } from "@/components/ui/Alert";
 import { ReportModal } from "@/components/listings/ReportModal";
@@ -24,7 +25,6 @@ import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { Listing } from "@/lib/types";
 import {
   MapPin,
-  Phone,
   Share2,
   Heart,
   ChevronLeft,
@@ -331,24 +331,20 @@ export function ListingDetailView({ listing, related }: ListingDetailViewProps) 
               {shareFeedback && <Alert variant="info">{shareFeedback}</Alert>}
 
               {whatsappUrl && (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full block">
-                  <Button
-                    variant="accent"
-                    size="lg"
-                    leftIcon={<Phone className="w-5 h-5 text-gray-950" />}
-                    className="w-full shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white border-0"
-                  >
-                    Contactar por WhatsApp
-                  </Button>
-                </a>
+                <WhatsAppButton
+                  href={whatsappUrl}
+                  label="Contactar por WhatsApp"
+                  size="lg"
+                  fullWidth
+                  className="shadow-lg"
+                />
               )}
 
               {listing.contact_phone && (
                 <a href={`tel:${listing.contact_phone}`} className="w-full block">
                   <Button variant="outline" size="md" className="w-full">
                     Llamar al {listing.contact_phone}
-                  </Button>
-                </a>
+                  </Button>                </a>
               )}
 
               <ContactSellerButton

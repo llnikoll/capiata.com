@@ -9,19 +9,14 @@ import { createClient } from "@/lib/supabase/client";
 import { getAdminReports, getAdminStats } from "@/lib/supabase/queries";
 import { toErrorMessage } from "@/lib/supabase/errors";
 import { formatDateTime } from "@/lib/utils";
+import { REPORT_REASONS } from "@/lib/types";
 import type { AdminStats, ReportWithRelations } from "@/lib/types";
 
 const EMPTY_STATS: AdminStats = { users: 0, listings: 0, businesses: 0, pendingReports: 0 };
 
-const REASON_LABELS: Record<string, string> = {
-  scam: "Posible estafa",
-  fake: "Información falsa",
-  prohibited: "Producto prohibido",
-  spam: "Spam o duplicado",
-  offensive: "Contenido ofensivo",
-  wrong: "Categoría incorrecta",
-  other: "Otro motivo",
-};
+const REASON_LABELS: Record<string, string> = Object.fromEntries(
+  REPORT_REASONS.map((reason) => [reason.value, reason.label])
+);
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats>(EMPTY_STATS);

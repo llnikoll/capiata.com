@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Business } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
+import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { MapPin, Phone, CheckCircle2, Clock, Store } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/utils";
 
@@ -19,7 +20,7 @@ export const BusinessCard: React.FC<{ business: Business }> = ({ business }) => 
         <Avatar src={business.logo_url} name={business.business_name} size="lg" />
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <h4 className="font-bold text-gray-900 text-base truncate">
+            <h2 className="font-bold text-gray-900 text-base truncate">
               {business.profile?.username ? (
                 <Link href={`/tienda/${business.profile.username}`} className="hover:underline">
                   {business.business_name}
@@ -27,7 +28,7 @@ export const BusinessCard: React.FC<{ business: Business }> = ({ business }) => 
               ) : (
                 business.business_name
               )}
-            </h4>
+            </h2>
             {business.profile?.is_verified && (
               <CheckCircle2
                 className="w-4 h-4 text-emerald-500 shrink-0"
@@ -76,17 +77,7 @@ export const BusinessCard: React.FC<{ business: Business }> = ({ business }) => 
           </span>
         )}
 
-        {whatsappUrl && (
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all"
-          >
-            <Phone className="w-3.5 h-3.5" />
-            <span>WhatsApp</span>
-          </a>
-        )}
+        {whatsappUrl && <WhatsAppButton href={whatsappUrl} label="WhatsApp" size="sm" />}
       </div>
     </div>
   );

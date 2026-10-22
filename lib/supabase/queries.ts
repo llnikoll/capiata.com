@@ -709,6 +709,21 @@ export async function getFavorites(
   }));
 }
 
+/** Sólo los IDs de favoritos: lo usa el feed para no traer publicaciones completas. */
+export async function getFavoriteIds(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("favorites")
+    .select("listing_id")
+    .eq("user_id", userId);
+
+  if (error) fail("No pudimos cargar tus favoritos.", error);
+
+  return ((data ?? []) as unknown as Array<{ listing_id: string }>).map((row) => row.listing_id);
+}
+
 export async function addFavorite(
   supabase: SupabaseClient,
   userId: string,

@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Listing } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { useFavoritesContext } from "@/components/providers/FavoritesProvider";
 import {
   formatPrice,
@@ -84,16 +85,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               isOffer ? "bg-amber-50" : "bg-blue-50"
             }`}
           >
-            {imageFailed ? (
-              <ImageOff className="w-6 h-6 text-gray-400" />
-            ) : null}
-            <span
-              className={`text-4xl font-black opacity-20 ${
-                isOffer ? "text-[#F5B800]" : "text-[#1E3A5F]"
-              }`}
-            >
-              {isOffer ? "OFREZCO" : "BUSCO"}
-            </span>
+            <ImageOff className="w-8 h-8 text-[#5D6D7A]" aria-hidden="true" />
           </div>
         )}
 
@@ -123,7 +115,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">
         <div>
           {/* Metadata top: neighborhood & date */}
-          <div className="flex items-center justify-between text-[11px] text-gray-400 font-medium mb-1">
+          <div className="flex items-center justify-between text-[11px] text-gray-500 font-medium mb-1">
             <span className="flex items-center gap-1 text-gray-600 font-semibold truncate max-w-[160px]">
               <MapPin className="w-3 h-3 text-[#F5B800] shrink-0" />
               {listing.neighborhood || listing.location || "Capiatá"}
@@ -133,9 +125,9 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
           {/* Title */}
           <Link href={`/publicacion/${listing.slug}`}>
-            <h3 className="font-bold text-gray-900 text-base leading-snug line-clamp-2 hover:text-[#1E3A5F] transition-colors">
+            <h2 className="font-bold text-gray-900 text-base leading-snug line-clamp-2 hover:text-[#1E3A5F] transition-colors">
               {listing.title}
-            </h3>
+            </h2>
           </Link>
 
           {/* Description snippet */}
@@ -172,22 +164,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         {/* Footer actions */}
         <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
           {/* Views count */}
-          <div className="flex items-center gap-1 text-[11px] text-gray-400">
+          <div className="flex items-center gap-1 text-[11px] text-gray-500">
             <Eye className="w-3.5 h-3.5" />
             <span>{listing.views_count || 0}</span>
           </div>
 
           {/* WhatsApp Direct Action */}
           {whatsappUrl ? (
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs hover:shadow-md transition-all"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span>Contactar</span>
-            </a>
+            <WhatsAppButton href={whatsappUrl} label="Contactar" size="sm" />
           ) : (
             <Link href={`/publicacion/${listing.slug}`}>
               <Button variant="outline" size="sm">

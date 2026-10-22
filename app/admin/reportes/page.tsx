@@ -9,17 +9,11 @@ import { createClient } from "@/lib/supabase/client";
 import { getAdminReports, softDeleteListing, updateReportStatus } from "@/lib/supabase/queries";
 import { toErrorMessage } from "@/lib/supabase/errors";
 import { formatDateTime } from "@/lib/utils";
-import type { ReportWithRelations } from "@/lib/types";
+import { REPORT_REASONS, type ReportWithRelations } from "@/lib/types";
 
-const REASON_LABELS: Record<string, string> = {
-  scam: "Posible estafa o engaño",
-  fake: "Información o precio falso",
-  prohibited: "Producto o servicio prohibido",
-  spam: "Publicación duplicada o spam",
-  offensive: "Contenido ofensivo o inapropiado",
-  wrong: "Categoría incorrecta",
-  other: "Otro motivo",
-};
+const REASON_LABELS: Record<string, string> = Object.fromEntries(
+  REPORT_REASONS.map((reason) => [reason.value, reason.label])
+);
 
 type StatusFilter = "pending" | "all";
 
