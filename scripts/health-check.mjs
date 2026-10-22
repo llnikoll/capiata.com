@@ -161,8 +161,10 @@ console.log("\nTIENDA / VITRINA");
   if (esTablaFaltante(insert)) {
     skip("Anónimo NO puede subir fotos de tienda", "tabla inexistente → falta migración 007");
   } else {
+    // 400 = el trigger de cupo corta antes que RLS ("La tienda no existe");
+    // 401/403 = RLS. Cualquiera de los tres significa que no se insertó nada.
     check(
-      insert.status === 401 || insert.status === 403,
+      insert.status === 400 || insert.status === 401 || insert.status === 403,
       "Anónimo NO puede subir fotos de tienda",
       `HTTP ${insert.status}`
     );
