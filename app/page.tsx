@@ -25,7 +25,6 @@ import { CAPIATA_NEIGHBORHOODS } from "@/lib/types";
 import { useListings } from "@/lib/hooks/useListings";
 import { useBusinesses } from "@/lib/hooks/useBusinesses";
 import { useCategories } from "@/lib/hooks/useCategories";
-import { formatPrice, generateWhatsAppMessage, buildWhatsAppUrl } from "@/lib/utils";
 
 export default function Home() {
   const router = useRouter();
@@ -325,57 +324,9 @@ export default function Home() {
           ) : requestsLoading ? (
             <ListingGridSkeleton count={2} className="lg:grid-cols-2" />
           ) : requestListings.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {requestListings.map((listing) => (
-                <div
-                  key={listing.id}
-                  className="p-6 rounded-2xl bg-gradient-to-br from-blue-50/50 to-white border border-blue-100/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-4"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#1E3A5F] bg-blue-100/80 px-2.5 py-1 rounded-lg">
-                        BUSCO / PEDIDO
-                      </span>
-                      <span className="text-xs text-gray-500 font-semibold flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-[#F5B800]" />
-                        {listing.neighborhood || listing.location}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 leading-snug">
-                      {listing.title}
-                    </h3>
-                    <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
-                      {listing.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
-                    {listing.price ? (
-                      <span className="text-sm font-black text-[#1E3A5F]">
-                        Presupuesto: {formatPrice(Number(listing.price))}
-                      </span>
-                    ) : (
-                      <span className="text-xs font-semibold text-gray-500">
-                        Presupuesto a convenir
-                      </span>
-                    )}
-
-                    {listing.contact_whatsapp && (
-                      <a
-                        href={buildWhatsAppUrl(
-                          listing.contact_whatsapp,
-                          generateWhatsAppMessage(listing.title, listing.type)
-                        )}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Button variant="accent" size="sm">
-                          Tengo esto / Puedo ayudar
-                        </Button>
-                      </a>
-                    )}
-                  </div>
-                </div>
+                <ListingCard key={listing.id} listing={listing} />
               ))}
             </div>
           ) : (

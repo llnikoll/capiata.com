@@ -15,14 +15,18 @@ import {
   HelpCircle,
   LogOut,
   Building,
+  MessageCircle,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useConversations } from "@/lib/hooks/useConversations";
 
 export const Navbar = () => {
   const router = useRouter();
   const { user, loading } = useAuthUser();
+  const { totalUnread } = useConversations();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -48,7 +52,7 @@ export const Navbar = () => {
         <span className="inline-block bg-[#F5B800] text-gray-950 font-bold px-1.5 py-0.5 rounded text-[10px] uppercase">
           Directorio Local
         </span>
-        <span>
+        <span className="hidden sm:inline">
           Capiatá Conecta: conectando personas y emprendimientos de Capiatá sin comisiones ni pagos online.
         </span>
       </div>
@@ -127,10 +131,23 @@ export const Navbar = () => {
               <>
                 {user ? (
                   <>
-                    <Link href="/dashboard" className="hidden sm:inline-flex">
+                    <Link href="/dashboard" className="hidden sm:inline-flex relative">
                       <Button variant="ghost" size="sm" leftIcon={<User className="w-4 h-4" />}>
                         Mi Panel
                       </Button>
+                      {totalUnread > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                          {totalUnread > 9 ? "9+" : totalUnread}
+                        </span>
+                      )}
+                    </Link>
+                    <Link
+                      href="/dashboard/configuracion"
+                      className="hidden sm:inline-flex p-2 rounded-xl text-gray-600 hover:text-[#1E3A5F] hover:bg-gray-100 transition-colors"
+                      title="Configuración de la cuenta"
+                      aria-label="Configuración de la cuenta"
+                    >
+                      <Settings className="w-4 h-4" />
                     </Link>
                     <button
                       onClick={handleSignOut}
@@ -220,6 +237,25 @@ export const Navbar = () => {
                       <Button variant="outline" className="w-full justify-center">
                         Mi Panel
                       </Button>
+                    </Link>
+                    <Link
+                      href="/dashboard/mensajes"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2 rounded-xl bg-gray-50 text-gray-800 hover:bg-gray-100"
+                    >
+                      <MessageCircle className="w-4 h-4" /> Mensajes
+                      {totalUnread > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                          {totalUnread > 9 ? "9+" : totalUnread}
+                        </span>
+                      )}
+                    </Link>
+                    <Link
+                      href="/dashboard/configuracion"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2 rounded-xl bg-gray-50 text-gray-800 hover:bg-gray-100"
+                    >
+                      <Settings className="w-4 h-4" /> Configuración
                     </Link>
                     <button
                       onClick={() => {
