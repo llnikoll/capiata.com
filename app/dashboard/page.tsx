@@ -122,7 +122,9 @@ export default function DashboardPage() {
           </div>
           <span className="text-3xl font-black text-gray-900">{userListings.length}</span>
           <span className="text-[11px] text-emerald-600 font-medium">
-            {activeListings} activa(s) en Capiatá
+            {activeListings === 1
+              ? "1 publicación activa en Capiatá"
+              : `${activeListings} publicaciones activas en Capiatá`}
           </span>
         </div>
 

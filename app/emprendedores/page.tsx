@@ -1,9 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { BusinessCard } from "@/components/home/BusinessCard";
 import { useBusinesses } from "@/lib/hooks/useBusinesses";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { getBusinessByUser } from "@/lib/supabase/queries";
+import { createClient } from "@/lib/supabase/client";
 import { Store, PlusCircle, Radio } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
@@ -11,6 +14,29 @@ import { EmptyState, ListingGridSkeleton } from "@/components/ui/EmptyState";
 
 export default function EmprendedoresPage() {
   const { businesses, loading, error, reload } = useBusinesses();
+  const { user, loading: authLoading } = useAuthUser();
+  const [hasStore, setHasStore] = useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    setHasStore(null);
+    if (authLoading) return;
+    if (!user) {
+      setHasStore(false);
+      return;
+    }
+    (async () => {
+      try {
+        const business = await getBusinessByUser(createClient(), user.id).catch(() => null);
+        if (active) setHasStore(Boolean(business));
+      } catch {
+        if (active) setHasStore(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [user, authLoading]);
 
   return (
     <div className="py-10 bg-gray-50/50 min-h-screen">
@@ -29,11 +55,24 @@ export default function EmprendedoresPage() {
             </p>
           </div>
 
-          <Link href="/registro?tipo=emprendedor" className="shrink-0">
-            <Button variant="accent" size="lg" leftIcon={<PlusCircle className="w-5 h-5" />}>
-              Registrar Mi Comercio
-            </Button>
-          </Link>
+          <div className="shrink-0 flex flex-col items-end gap-2">
+            <Link
+              href={user ? (hasStore ? "/dashboard/mi-tienda" : "/dashboard") : "/registro?tipo=emprendedor"}
+            >
+              <Button
+                variant="accent"
+                size="lg"
+                leftIcon={user ? <Store className="w-5 h-5" /> : <PlusCircle className="w-5 h-5" />}
+              >
+                {user ? (hasStore ? "Mi Tienda" : "Abrir Mi Tienda") : "Registrar Mi Comercio"}
+              </Button>
+            </Link>
+            {user && !hasStore && (
+              <span className="text-[11px] text-gray-400">
+                Tu tienda se maneja desde tu panel, no hace falta registrarte de nuevo.
+              </span>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -65,9 +104,17 @@ export default function EmprendedoresPage() {
             title="Aún no hay comercios registrados"
             description="Registrá tu emprendimiento y conocé más clientes en Capiatá."
             action={
-              <Link href="/registro?tipo=emprendedor">
-                <Button variant="accent">Registrar Mi Comercio</Button>
-              </Link>
+              user ? (
+                <Link href="/dashboard/mi-tienda">
+                  <Button variant="accent" leftIcon={<Store className="w-4 h-4" />}>
+                    Abrir Mi Tienda
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/registro?tipo=emprendedor">
+                  <Button variant="accent">Registrar Mi Comercio</Button>
+                </Link>
+              )
             }
           />
         )}

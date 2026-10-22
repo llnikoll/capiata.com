@@ -336,7 +336,7 @@ export function ListingDetailView({ listing, related }: ListingDetailViewProps) 
                     variant="accent"
                     size="lg"
                     leftIcon={<Phone className="w-5 h-5 text-gray-950" />}
-                    className="w-full shadow-lg bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+                    className="w-full shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white border-0"
                   >
                     Contactar por WhatsApp
                   </Button>

@@ -74,7 +74,7 @@ export default function AdminDashboardPage() {
 
       {/* Admin KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-gray-900 border border-gray-700 space-y-2">
+        <div className="p-5 rounded-2xl bg-gray-900 border border-gray-700 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-xs font-semibold">Usuarios Totales</span>
             <Users className="w-4 h-4 text-blue-400" />
@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
           <span className="text-[11px] text-gray-400 font-medium">Perfiles registrados</span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-gray-900 border border-gray-700 space-y-2">
+        <div className="p-5 rounded-2xl bg-gray-900 border border-gray-700 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-xs font-semibold">Publicaciones</span>
             <Megaphone className="w-4 h-4 text-[#F5B800]" />
@@ -96,7 +96,7 @@ export default function AdminDashboardPage() {
           <span className="text-[11px] text-gray-400 font-medium">OFREZCO / BUSCO activas</span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-gray-900 border border-gray-700 space-y-2">
+        <div className="p-5 rounded-2xl bg-gray-900 border border-gray-700 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-xs font-semibold">Comercios Registrados</span>
             <Store className="w-4 h-4 text-purple-400" />
@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
           <span className="text-[11px] text-purple-300 font-medium">Emprendimientos Capiatá</span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-gray-900 border border-gray-700 space-y-2">
+        <div className="p-5 rounded-2xl bg-gray-900 border border-gray-700 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-xs font-semibold">Reportes Pendientes</span>
             <Flag className="w-4 h-4 text-red-400" />

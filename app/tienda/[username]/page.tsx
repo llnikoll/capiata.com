@@ -109,7 +109,7 @@ async function StoreContent({ params }: PageProps) {
   return (
     <div className="py-8 bg-gray-50/50 min-h-screen">
       <BusinessJsonLd
-        business={{ ...business, images, profile: { username: profile.username } }}
+        business={{ ...business, images, profile: { username: profile.username, is_verified: profile.is_verified } }}
       />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">

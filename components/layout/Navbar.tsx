@@ -79,7 +79,7 @@ export const Navbar = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="¿Qué necesitás o buscás en Capiatá? Ej: plomero, moto, heladera..."
+              placeholder="Buscar en Capiatá…"
               className="w-full h-10 pl-9 pr-4 rounded-xl bg-gray-100/80 border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] focus:bg-white transition-all"
             />
             <Search className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
@@ -87,23 +87,20 @@ export const Navbar = () => {
 
           {/* Nav Links (Desktop) */}
           <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-gray-700">
-            <Link
-              href="/explorar"
-              className="hover:text-[#1E3A5F] transition-colors flex items-center gap-1"
-            >
+            <Link href="/explorar" className="hover:text-[#1E3A5F] transition-colors flex items-center gap-1">
               Explorar
             </Link>
             <Link
               href="/explorar?tipo=OFFER"
-              className="hover:text-[#1E3A5F] transition-colors flex items-center gap-1 text-[#D4A000]"
+              className="hover:text-[#1E3A5F] transition-colors flex items-center gap-1"
             >
-              <Megaphone className="w-4 h-4" /> Ofertas
+              <Megaphone className="w-4 h-4 text-[#D4A000]" /> Ofertas
             </Link>
             <Link
               href="/explorar?tipo=REQUEST"
-              className="hover:text-[#1E3A5F] transition-colors flex items-center gap-1 text-[#1E3A5F]"
+              className="hover:text-[#1E3A5F] transition-colors flex items-center gap-1"
             >
-              Pedidos
+              <HelpCircle className="w-4 h-4 text-[#1E3A5F]" /> Pedidos
             </Link>
             <Link
               href="/emprendedores"

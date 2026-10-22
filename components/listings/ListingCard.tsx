@@ -3,9 +3,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { Listing } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { useFavoritesContext } from "@/components/providers/FavoritesProvider";
 import {
   formatPrice,
   formatRelativeDate,
@@ -27,7 +29,25 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   isFavorite = false,
 }) => {
   const [imageFailed, setImageFailed] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const sharedFavorites = useFavoritesContext();
   const isOffer = listing.type === "OFFER";
+
+  // Sin controlador externo (favoritos) la tarjeta gestiona su favorito con el
+  // proveedor global; anónimos van al login para poder guardarla.
+  const isFav = onFavoriteToggle ? isFavorite : sharedFavorites.isFavorite(listing.id);
+  const handleFavorite = () => {
+    if (onFavoriteToggle) {
+      onFavoriteToggle(listing.id);
+      return;
+    }
+    if (sharedFavorites.hasUser) {
+      void sharedFavorites.toggleFavorite(listing.id);
+    } else {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+    }
+  };
 
   const mainImage =
     listing.images && listing.images.length > 0 && !imageFailed
@@ -83,15 +103,13 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         </div>
 
         {/* Favorite Button */}
-        {onFavoriteToggle && (
-          <button
-            onClick={() => onFavoriteToggle(listing.id)}
-            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/90 backdrop-blur-sm text-gray-700 hover:text-red-500 hover:bg-white transition-colors shadow-sm"
-            aria-label={isFavorite ? "Quitar de favoritos" : "Guardar en favoritos"}
-          >
-            <Heart className={`w-4 h-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
-          </button>
-        )}
+        <button
+          onClick={handleFavorite}
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/90 backdrop-blur-sm text-gray-700 hover:text-red-500 hover:bg-white transition-colors shadow-sm"
+          aria-label={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+        >
+          <Heart className={`w-4 h-4 ${isFav ? "fill-red-500 text-red-500" : ""}`} />
+        </button>
 
         {/* Price tag over image */}
         {listing.price !== null && Number(listing.price) > 0 && (
@@ -136,12 +154,18 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         {publisherName && (
           <div className="flex items-center gap-2 pt-1">
             <Avatar src={publisherAvatar} name={publisherName} size="sm" />
-            <Link
-              href={listing.profile?.username ? `/usuario/${listing.profile.username}` : "#"}
-              className="text-[11px] font-semibold text-gray-600 hover:text-[#1E3A5F] truncate"
-            >
-              {publisherName}
-            </Link>
+            {listing.profile?.username ? (
+              <Link
+                href={`/usuario/${listing.profile.username}`}
+                className="text-[11px] font-semibold text-gray-600 hover:text-[#1E3A5F] truncate"
+              >
+                {publisherName}
+              </Link>
+            ) : (
+              <span className="text-[11px] font-semibold text-gray-600 truncate">
+                {publisherName}
+              </span>
+            )}
           </div>
         )}
 

@@ -36,12 +36,12 @@ const sidebarLinks = [
     icon: LayoutDashboard,
   },
   {
-    name: "Mis Publicaciones (OFREZCO)",
+    name: "Mis anuncios (OFREZCO)",
     href: "/dashboard/mis-publicaciones",
     icon: Megaphone,
   },
   {
-    name: "Mis Pedidos (BUSCO)",
+    name: "Mis pedidos (BUSCO)",
     href: "/dashboard/mis-pedidos",
     icon: HelpCircle,
   },

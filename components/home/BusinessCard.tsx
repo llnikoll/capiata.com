@@ -28,7 +28,12 @@ export const BusinessCard: React.FC<{ business: Business }> = ({ business }) => 
                 business.business_name
               )}
             </h4>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            {business.profile?.is_verified && (
+              <CheckCircle2
+                className="w-4 h-4 text-emerald-500 shrink-0"
+                aria-label="Cuenta verificada"
+              />
+            )}
           </div>
           {business.category && (
             <span className="text-xs font-semibold text-[#1E3A5F] bg-blue-50 px-2 py-0.5 rounded-md inline-block w-fit mt-0.5">

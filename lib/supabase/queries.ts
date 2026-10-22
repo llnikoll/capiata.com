@@ -467,7 +467,7 @@ export async function getBusinesses(
   // El username permite que cada tarjeta del directorio enlace a su tienda.
   const { data, error } = await supabase
     .from("businesses")
-    .select(`${BUSINESS_COLUMNS}, profile:profiles(username)`)
+    .select(`${BUSINESS_COLUMNS}, profile:profiles(username, is_verified)`)
     .order("created_at", { ascending: false })
     .limit(options?.limit ?? 60);
 

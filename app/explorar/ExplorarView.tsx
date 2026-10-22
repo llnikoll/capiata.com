@@ -246,7 +246,16 @@ export function ExplorarView() {
           <div className="lg:col-span-3 space-y-4">
             <div className="flex items-center justify-between text-xs text-gray-500 px-1">
               <span className="inline-flex items-center gap-2">
-                Mostrando <strong>{listings.length}</strong> publicación(es)
+                {loading
+                  ? "Cargando resultados…"
+                  : listings.length === 0
+                    ? "Sin resultados"
+                    : (
+                      <>
+                        Mostrando <strong>{listings.length}</strong>{" "}
+                        {listings.length === 1 ? "publicación" : "publicaciones"}
+                      </>
+                    )}
                 {refreshing && <Loader2 className="w-3 h-3 animate-spin text-gray-400" />}
               </span>
               {hasFilters && (

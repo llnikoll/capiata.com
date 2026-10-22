@@ -66,7 +66,7 @@ export interface Business {
   } | null;
   created_at: string;
   /** Sólo lo pide el directorio, para enlazar a /tienda/[username]. */
-  profile?: Pick<Profile, "username"> | null;
+  profile?: Pick<Profile, "username" | "is_verified"> | null;
   /** Sólo lo piden la tienda pública y el editor. */
   images?: BusinessImage[];
 }
