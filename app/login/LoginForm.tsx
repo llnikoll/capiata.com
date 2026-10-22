@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -6,12 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { Mail, Lock, LogIn } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toErrorMessage } from "@/lib/supabase/errors";
-
-
+import { GoogleIcon } from "@/components/ui/GoogleIcon";
 
 export function LoginForm() {
   const router = useRouter();
@@ -39,16 +37,16 @@ export function LoginForm() {
 
       if (error) {
         setErrorMessage(
-          error.message || "No pudimos iniciar sesiÃ³n. RevisÃ¡ tus datos e intentalo de nuevo."
+          error.message || "No pudimos iniciar sesión. Revisá tus datos e intentalo de nuevo."
         );
         return;
       }
 
-      setSuccessMessage("SesiÃ³n iniciada. Te estamos llevando a tu panel.");
+      setSuccessMessage("Sesión iniciada. Te estamos llevando a tu panel.");
       router.push(redirectTo);
       router.refresh();
     } catch (error) {
-      setErrorMessage(toErrorMessage(error, "No pudimos iniciar sesiÃ³n."));
+      setErrorMessage(toErrorMessage(error, "No pudimos iniciar sesión."));
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +57,7 @@ export function LoginForm() {
     setSuccessMessage(null);
 
     if (!email.trim()) {
-      setErrorMessage("EscribÃ­ tu correo electrÃ³nico para enviarte el enlace de recuperaciÃ³n.");
+      setErrorMessage("Escribí tu correo electrónico para enviarte el enlace de recuperación.");
       return;
     }
 
@@ -71,15 +69,15 @@ export function LoginForm() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "No pudimos enviar el correo de recuperaciÃ³n.");
+        setErrorMessage(error.message || "No pudimos enviar el correo de recuperación.");
         return;
       }
 
       setSuccessMessage(
-        "Te enviamos un correo con las instrucciones para restablecer tu contraseÃ±a."
+        "Te enviamos un correo con las instrucciones para restablecer tu contraseña."
       );
     } catch (error) {
-      setErrorMessage(toErrorMessage(error, "No pudimos enviar el correo de recuperaciÃ³n."));
+      setErrorMessage(toErrorMessage(error, "No pudimos enviar el correo de recuperación."));
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +97,10 @@ export function LoginForm() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "Error al iniciar sesiÃ³n con Google.");
+        setErrorMessage(error.message || "Error al iniciar sesión con Google.");
       }
     } catch (error) {
-      setErrorMessage(toErrorMessage(error, "Error al iniciar sesiÃ³n con Google."));
+      setErrorMessage(toErrorMessage(error, "Error al iniciar sesión con Google."));
     } finally {
       setIsLoading(false);
     }
@@ -115,9 +113,9 @@ export function LoginForm() {
           <div className="w-12 h-12 rounded-2xl bg-[#1E3A5F] text-[#F5B800] font-black text-2xl flex items-center justify-center mx-auto">
             C
           </div>
-          <h1 className="text-2xl font-black text-gray-900">Ingresar a CapiatÃ¡ Conecta</h1>
+          <h1 className="text-2xl font-black text-gray-900">Ingresar a Capiatá Conecta</h1>
           <p className="text-xs text-gray-500">
-            AccedÃ© a tu cuenta para gestionar tus publicaciones
+            Accedé a tu cuenta para gestionar tus publicaciones
           </p>
         </div>
 
@@ -126,7 +124,7 @@ export function LoginForm() {
 
         <form onSubmit={handleLogin} noValidate className="space-y-4">
           <Input
-            label="Correo electrÃ³nico"
+            label="Correo electrónico"
             type="email"
             placeholder="tuemail@ejemplo.com"
             value={email}
@@ -137,9 +135,9 @@ export function LoginForm() {
           />
 
           <Input
-            label="ContraseÃ±a"
+            label="Contraseña"
             type="password"
-            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             leftIcon={<Lock className="w-4 h-4" />}
@@ -153,7 +151,7 @@ export function LoginForm() {
               onClick={handlePasswordReset}
               className="text-xs text-[#1E3A5F] font-semibold hover:underline"
             >
-              Â¿Olvidaste tu contraseÃ±a?
+              ¿Olvidaste tu contraseña?
             </button>
           </div>
 
@@ -165,7 +163,7 @@ export function LoginForm() {
             className="w-full shadow-md"
             leftIcon={<LogIn className="w-4 h-4" />}
           >
-            Iniciar SesiÃ³n
+            Iniciar Sesión
           </Button>
         </form>
 
@@ -174,7 +172,7 @@ export function LoginForm() {
             <div className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="px-2 bg-white text-gray-500">o continuÃ¡ con</span>
+            <span className="px-2 bg-white text-gray-500">o continuá con</span>
           </div>
         </div>
 
@@ -191,7 +189,7 @@ export function LoginForm() {
         </Button>
 
         <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-100">
-          Â¿No tenÃ©s cuenta aÃºn?{" "}
+          ¿No tenés cuenta aún?{" "}
           <Link href="/registro" className="text-[#1E3A5F] font-bold hover:underline">
             Registrate gratis
           </Link>

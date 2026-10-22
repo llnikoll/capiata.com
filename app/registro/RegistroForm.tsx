@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -7,12 +7,12 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { User, Mail, Lock, Phone, UserPlus, Store } from "lucide-react";
 import { CAPIATA_NEIGHBORHOODS, type UserType } from "@/lib/types";
 import { registrationFormSchema, validateForm, type FieldErrors } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/client";
 import { toErrorMessage } from "@/lib/supabase/errors";
+import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { normalizeWhatsAppNumber } from "@/lib/utils";
 
 
@@ -50,7 +50,7 @@ export function RegistroForm() {
 
     if (!parsed.success) {
       setFieldErrors(parsed.errors);
-      setErrorMessage("RevisÃ¡ los campos marcados antes de continuar.");
+      setErrorMessage("Revisá los campos marcados antes de continuar.");
       setIsLoading(false);
       return;
     }
@@ -91,8 +91,8 @@ export function RegistroForm() {
         const next = userType === "business" ? "/dashboard/mi-tienda" : "/dashboard";
         setSuccessMessage(
           userType === "business"
-            ? "Â¡Cuenta creada! Ahora creÃ¡ tu tienda online."
-            : "Â¡Cuenta creada con Ã©xito! Te estamos llevando a tu panel."
+            ? "¡Cuenta creada! Ahora creá tu tienda online."
+            : "¡Cuenta creada con éxito! Te estamos llevando a tu panel."
         );
         router.push(next);
         router.refresh();
@@ -100,7 +100,7 @@ export function RegistroForm() {
       }
 
       setSuccessMessage(
-        "Â¡Cuenta creada con Ã©xito! RevisÃ¡ tu correo para confirmar la cuenta y luego iniciÃ¡ sesiÃ³n."
+        "¡Cuenta creada con éxito! Revisá tu correo para confirmar la cuenta y luego iniciá sesión."
       );
       setTimeout(() => router.push("/login"), 3000);
     } catch (error) {
@@ -141,9 +141,9 @@ export function RegistroForm() {
     <div className="py-12 bg-gray-50/50 min-h-screen flex items-center justify-center">
       <div className="max-w-lg w-full mx-4 bg-white p-8 rounded-3xl border border-gray-100 shadow-xl space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-black text-gray-900">Crear Cuenta en CapiatÃ¡ Conecta</h1>
+          <h1 className="text-2xl font-black text-gray-900">Crear Cuenta en Capiatá Conecta</h1>
           <p className="text-xs text-gray-500">
-            Sumate a la red local y conectÃ¡ con tus vecinos
+            Sumate a la red local y conectá con tus vecinos
           </p>
         </div>
 
@@ -183,7 +183,7 @@ export function RegistroForm() {
                 ? "Nombre y Apellido"
                 : "Nombre del Comercio / Emprendimiento"
             }
-            placeholder={userType === "person" ? "Ej: Juan PÃ©rez" : "Ej: PanaderÃ­a San JosÃ©"}
+            placeholder={userType === "person" ? "Ej: Juan Pérez" : "Ej: Panadería San José"}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             leftIcon={<User className="w-4 h-4" />}
@@ -192,7 +192,7 @@ export function RegistroForm() {
           />
 
           <Input
-            label="Correo electrÃ³nico"
+            label="Correo electrónico"
             type="email"
             placeholder="tuemail@ejemplo.com"
             value={email}
@@ -203,18 +203,18 @@ export function RegistroForm() {
           />
 
           <Input
-            label="TelÃ©fono / WhatsApp"
+            label="Teléfono / WhatsApp"
             placeholder="0981123456"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             leftIcon={<Phone className="w-4 h-4" />}
             error={fieldErrors.phone}
-            helperText="Con este nÃºmero te contactarÃ¡n los vecinos por WhatsApp."
+            helperText="Con este número te contactarán los vecinos por WhatsApp."
             required
           />
 
           <Select
-            label="Barrio en CapiatÃ¡"
+            label="Barrio en Capiatá"
             value={neighborhood}
             onChange={(e) => setNeighborhood(e.target.value)}
             options={CAPIATA_NEIGHBORHOODS.map((b) => ({
@@ -224,9 +224,9 @@ export function RegistroForm() {
           />
 
           <Input
-            label="ContraseÃ±a"
+            label="Contraseña"
             type="password"
-            placeholder="MÃ­nimo 8 caracteres"
+            placeholder="Mínimo 8 caracteres"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             leftIcon={<Lock className="w-4 h-4" />}
@@ -268,9 +268,9 @@ export function RegistroForm() {
         </Button>
 
         <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-100">
-          Â¿Ya tenÃ©s cuenta?{" "}
+          ¿Ya tenés cuenta?{" "}
           <Link href="/login" className="text-[#1E3A5F] font-bold hover:underline">
-            Iniciar sesiÃ³n
+            Iniciar sesión
           </Link>
         </div>
       </div>
