@@ -497,9 +497,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  UPDATE public.listings
-  SET views_count = views_count + 1
-  WHERE id = listing_id;
+  UPDATE public.listings AS l
+  SET views_count = COALESCE(l.views_count, 0) + 1
+  WHERE l.id = increment_views.listing_id
+    AND l.status = 'active';
 END;
 $$;
 

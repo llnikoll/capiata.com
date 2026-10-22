@@ -1,6 +1,18 @@
 import React from "react";
 import { Listing, Business } from "@/lib/types";
 
+/**
+ * Serializa datos para un <script type="application/ld+json"> escapando los
+ * caracteres que permiten cerrar la etiqueta: un título con "</script>" no
+ * puede inyectar HTML (XSS almacenado).
+ */
+function toJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
 export const ListingJsonLd: React.FC<{ listing: Listing }> = ({ listing }) => {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capiata.com";
   const isOffer = listing.type === "OFFER";
@@ -33,7 +45,7 @@ export const ListingJsonLd: React.FC<{ listing: Listing }> = ({ listing }) => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: toJsonLd(jsonLd) }}
     />
   );
 };
@@ -67,7 +79,7 @@ export const BusinessJsonLd: React.FC<{ business: Business }> = ({ business }) =
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: toJsonLd(jsonLd) }}
     />
   );
 };
@@ -112,7 +124,7 @@ export const CollectionJsonLd: React.FC<CollectionJsonLdProps> = ({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: toJsonLd(jsonLd) }}
     />
   );
 };

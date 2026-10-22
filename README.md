@@ -34,7 +34,7 @@ En el **SQL Editor** del proyecto, ejecutar en este orden:
 
 1. `supabase/setup_all.sql` — esquema completo, RLS, 14 categorías y endurecimiento de
    producción (buckets de Storage, Realtime, rol admin). Es idempotente.
-   Alternativa por partes: `supabase/migrations/001_initial_schema.sql` → `002` → `003` → `004_production_hardening.sql` → `005` → `006` → `007_storefront.sql`.
+   Alternativa por partes: `supabase/migrations/001_initial_schema.sql` → `002` → `003` → `004_production_hardening.sql` → `005` → `006` → `007_storefront.sql` → `008_security_hardening.sql`.
 
 2. Habilitar tu cuenta como administradora:
 

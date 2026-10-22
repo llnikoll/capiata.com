@@ -84,3 +84,14 @@ export function toExternalUrl(value: string | null | undefined): string | null {
   if (!trimmed) return null;
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
+
+/**
+ * Sólo permite rutas internas al redirigir tras el login. Bloquea
+ * "https://otro-sitio.com" y "//otro-sitio.com" (open redirect / phishing).
+ */
+export function safeRedirectPath(
+  value: string | null | undefined,
+  fallback = "/dashboard"
+): string {
+  return value && value.startsWith("/") && !value.startsWith("//") ? value : fallback;
+}

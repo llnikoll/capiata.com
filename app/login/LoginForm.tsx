@@ -10,11 +10,12 @@ import { Mail, Lock, LogIn } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toErrorMessage } from "@/lib/supabase/errors";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
+import { safeRedirectPath } from "@/lib/utils";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const redirectTo = safeRedirectPath(searchParams.get("redirect"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
