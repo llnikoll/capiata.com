@@ -1014,3 +1014,95 @@ CREATE TRIGGER profiles_protect_privileges
   FOR EACH ROW EXECUTE FUNCTION public.protect_profile_privileges();
 
 NOTIFY pgrst, 'reload schema';
+
+-- ============================================================================
+-- 18. SEGURIDAD: FUNCIONES Y TOPES ANTI-ABUSO
+-- (mismo contenido que supabase/migrations/008_security_hardening.sql)
+-- Va al final a proposito: redefine increment_views() de la seccion 14.
+-- ============================================================================
+
+-- increment_views(): search_path fijo y solo cuenta publicaciones activas.
+-- Cualquiera podia inflar el contador de cualquier publicacion, incluidas las
+-- borradas.
+CREATE OR REPLACE FUNCTION public.increment_views(listing_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.listings AS l
+  SET views_count = COALESCE(l.views_count, 0) + 1
+  WHERE l.id = increment_views.listing_id
+    AND l.status = 'active';
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.increment_views(UUID) TO authenticated, anon;
+
+-- Topes anti-abuso por cuenta. Cortan el spam automatizado; si algun dia hacen
+-- falta limites mas finos, mover a un rate limiter dedicado.
+CREATE OR REPLACE FUNCTION public.enforce_user_quotas()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_recent INT;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN NEW; -- SQL Editor / service role
+  END IF;
+
+  IF TG_TABLE_NAME = 'listings' THEN
+    SELECT count(*) INTO v_recent
+    FROM public.listings
+    WHERE user_id = auth.uid() AND created_at > NOW() - INTERVAL '1 hour';
+
+    IF v_recent >= 10 THEN
+      RAISE EXCEPTION 'Alcanzaste el maximo de 10 publicaciones por hora. Proba mas tarde.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+  ELSIF TG_TABLE_NAME = 'messages' THEN
+    SELECT count(*) INTO v_recent
+    FROM public.messages
+    WHERE sender_id = auth.uid() AND created_at > NOW() - INTERVAL '1 minute';
+
+    IF v_recent >= 20 THEN
+      RAISE EXCEPTION 'Estas enviando mensajes demasiado rapido. Espera un momento.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+  ELSIF TG_TABLE_NAME = 'reports' THEN
+    SELECT count(*) INTO v_recent
+    FROM public.reports
+    WHERE reporter_id = auth.uid() AND created_at > NOW() - INTERVAL '1 hour';
+
+    IF v_recent >= 5 THEN
+      RAISE EXCEPTION 'Ya enviaste varios reportes en la ultima hora. Gracias por avisar.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS listings_enforce_user_quotas ON public.listings;
+CREATE TRIGGER listings_enforce_user_quotas
+  BEFORE INSERT ON public.listings
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_user_quotas();
+
+DROP TRIGGER IF EXISTS messages_enforce_user_quotas ON public.messages;
+CREATE TRIGGER messages_enforce_user_quotas
+  BEFORE INSERT ON public.messages
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_user_quotas();
+
+DROP TRIGGER IF EXISTS reports_enforce_user_quotas ON public.reports;
+CREATE TRIGGER reports_enforce_user_quotas
+  BEFORE INSERT ON public.reports
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_user_quotas();
+
+NOTIFY pgrst, 'reload schema';
