@@ -222,7 +222,7 @@ async function CategoriaContent({ params, searchParams }: PageProps) {
                 >
                   {item.name}
                   {item.listing_count > 0 && (
-                    <span className="text-gray-400 font-normal"> · {item.listing_count}</span>
+                    <span className="text-gray-500 font-normal"> · {item.listing_count}</span>
                   )}
                 </Link>
               ))}

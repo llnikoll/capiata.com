@@ -154,7 +154,7 @@ async function BarrioContent({ params, searchParams }: PageProps) {
 
         {/* Encabezado */}
         <header className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xs space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-[#D4A000] text-xs font-bold">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold">
             <MapPin className="w-3.5 h-3.5" /> Barrio de Capiatá
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
